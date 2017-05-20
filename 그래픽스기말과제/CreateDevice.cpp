@@ -132,6 +132,9 @@ public:
 	void fire();
 	void init(float x, float y);
 	void move();
+	void move_up();
+	void move_right();
+	void move_left();
 
 };
 
@@ -148,6 +151,21 @@ void Enemy::move()
 {
 	y_pos += 2;
 
+}
+
+void Enemy::move_up()
+{
+	y_pos -= 2;
+}
+
+void Enemy::move_right()
+{
+	x_pos += 2.5;
+}
+
+void Enemy::move_left()
+{
+	x_pos -= 2.5;
 }
 
 
@@ -234,6 +252,11 @@ void Bullet::hide()
 //객체 생성 
 Hero hero;
 Enemy enemy[ENEMY_NUM];
+Enemy enemy_Down_S1[ENEMY_NUM];
+Enemy enemy_Right_S1[ENEMY_NUM];
+Enemy enemy_Left_S1[ENEMY_NUM];
+
+
 Bullet bullet;
 
 
@@ -251,7 +274,7 @@ int WINAPI WinMain(HINSTANCE hInstance,
 
 	wc.cbSize = sizeof(WNDCLASSEX);
 	wc.style = CS_HREDRAW | CS_VREDRAW;
-	wc.lpfnWndProc = (WNDPROC)WindowProc;
+	wc.lpfnWndProc = WindowProc;
 	wc.hInstance = hInstance;
 	wc.hCursor = LoadCursor(NULL, IDC_ARROW);
 	wc.lpszClassName = L"WindowClass";
@@ -259,7 +282,7 @@ int WINAPI WinMain(HINSTANCE hInstance,
 	RegisterClassEx(&wc);
 
 	hWnd = CreateWindowEx(NULL, L"WindowClass", L"Our Direct3D Program",
-		WS_EX_TOPMOST | WS_POPUP, 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT,
+		WS_OVERLAPPEDWINDOW, 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT,
 		NULL, NULL, hInstance, NULL);
 
 	ShowWindow(hWnd, nCmdShow);
@@ -333,7 +356,7 @@ void initD3D(HWND hWnd)
 	D3DPRESENT_PARAMETERS d3dpp;
 
 	ZeroMemory(&d3dpp, sizeof(d3dpp));
-	d3dpp.Windowed = FALSE;
+	d3dpp.Windowed = TRUE;
 	d3dpp.SwapEffect = D3DSWAPEFFECT_DISCARD;
 	d3dpp.hDeviceWindow = hWnd;
 	d3dpp.BackBufferFormat = D3DFMT_X8R8G8B8;
@@ -429,8 +452,12 @@ void init_game(void)
 	//적들 초기화 
 	for (int i = 0; i<ENEMY_NUM; i++)
 	{
+		//enemy[i].init((float)(rand() % 300), rand() % 200 - 300);
+		enemy[i].init((float)(10 + 60*i), 0);
+		enemy_Down_S1[i].init((float)(10+ 60 * i), 416); //밑에서 올라가는 애
+		enemy_Right_S1[i].init(-64, (float)(10 + 60 * i));
+		enemy_Left_S1[i].init(640, (float)(10 + 60 * i));
 
-		enemy[i].init((float)(rand() % 300), rand() % 200 - 300);
 	}
 
 	//총알 초기화 
@@ -459,10 +486,25 @@ void do_game_logic(void)
 	//적들 처리 
 	for (int i = 0; i<ENEMY_NUM; i++)
 	{
-		if (enemy[i].y_pos > 500)
-			enemy[i].init((float)(rand() % 300), rand() % 200 - 300);
+		if (enemy[i].y_pos > 480)
+			enemy[i].init((float)(10 + 60 * i), 0);
 		else
 			enemy[i].move();
+
+		if (enemy_Down_S1[i].y_pos < -64)
+			enemy_Down_S1[i].init((float)(10 + 60 * i), 416);
+		else
+			enemy_Down_S1[i].move_up();
+
+		if (enemy_Right_S1[i].x_pos > 640)
+			enemy_Right_S1[i].init(-64, (float)(10 + 60 * i));
+		else
+			enemy_Right_S1[i].move_right();
+
+		if (enemy_Left_S1[i].x_pos < -64)
+			enemy_Left_S1[i].init(640, (float)(10 + 60 * i));
+		else
+			enemy_Left_S1[i].move_left();
 	}
 
 
@@ -562,8 +604,41 @@ void render_frame(void)
 		D3DXVECTOR3 position2(enemy[i].x_pos, enemy[i].y_pos, 0.0f);    // position at 50, 50 with no depth
 		d3dspt->Draw(sprite_enemy, &part2, &center2, &position2, D3DCOLOR_ARGB(255, 255, 255, 255));
 	}
+	////에네미_down 
+	RECT part3;
+	SetRect(&part3, 0, 0, 64, 64);
+	D3DXVECTOR3 center3(0.0f, 0.0f, 0.0f);    // center at the upper-left corner
 
+	for (int i = 0; i<ENEMY_NUM; i++)
+	{
 
+		D3DXVECTOR3 position3(enemy_Down_S1[i].x_pos, enemy_Down_S1[i].y_pos, 0.0f);    // position at 50, 50 with no depth
+		d3dspt->Draw(sprite_enemy, &part3, &center3, &position3, D3DCOLOR_ARGB(255, 255, 255, 255));
+	}
+
+	////에네미_right 
+	RECT part4;
+	SetRect(&part4, 0, 0, 64, 64);
+	D3DXVECTOR3 center4(0.0f, 0.0f, 0.0f);    // center at the upper-left corner
+
+	for (int i = 0; i<ENEMY_NUM; i++)
+	{
+
+		D3DXVECTOR3 position4(enemy_Right_S1[i].x_pos, enemy_Right_S1[i].y_pos, 0.0f);    // position at 50, 50 with no depth
+		d3dspt->Draw(sprite_enemy, &part4, &center4, &position4, D3DCOLOR_ARGB(255, 255, 255, 255));
+	}
+
+	////에네미_right 
+	RECT part5;
+	SetRect(&part5, 0, 0, 64, 64);
+	D3DXVECTOR3 center5(0.0f, 0.0f, 0.0f);    // center at the upper-left corner
+
+	for (int i = 0; i<ENEMY_NUM; i++)
+	{
+
+		D3DXVECTOR3 position5(enemy_Left_S1[i].x_pos, enemy_Left_S1[i].y_pos, 0.0f);    // position at 50, 50 with no depth
+		d3dspt->Draw(sprite_enemy, &part5, &center5, &position5, D3DCOLOR_ARGB(255, 255, 255, 255));
+	}
 
 	d3dspt->End();    // end sprite drawing
 
