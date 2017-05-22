@@ -6,8 +6,8 @@
 #include <iostream>
 
 // define the screen resolution and keyboard macros
-#define SCREEN_WIDTH  640
-#define SCREEN_HEIGHT 480
+#define SCREEN_WIDTH  800
+#define SCREEN_HEIGHT 640
 #define KEY_DOWN(vk_code) ((GetAsyncKeyState(vk_code) & 0x8000) ? 1 : 0)
 #define KEY_UP(vk_code) ((GetAsyncKeyState(vk_code) & 0x8000) ? 0 : 1)
 
@@ -101,21 +101,21 @@ void Hero::move(int i)
 	switch (i)
 	{
 	case MOVE_UP:
-		y_pos -= 3;
+		y_pos -= 5;
 		break;
 
 	case MOVE_DOWN:
-		y_pos += 3;
+		y_pos += 5;
 		break;
 
 
 	case MOVE_LEFT:
-		x_pos -= 3;
+		x_pos -= 5;
 		break;
 
 
 	case MOVE_RIGHT:
-		x_pos += 3;
+		x_pos += 5;
 		break;
 
 	}
@@ -232,7 +232,7 @@ void Bullet::active()
 
 void Bullet::move()
 {
-	y_pos -= 8;
+	y_pos += 6;
 }
 
 void Bullet::hide()
@@ -241,7 +241,27 @@ void Bullet::hide()
 
 }
 
+class Stage_ :public entity {
 
+public:
+
+	int Stage;
+	void AddStage();
+	int ShowStage();
+};
+
+void Stage_::AddStage()
+{
+	if (Stage <= 5)
+		Stage++;
+	else
+		Stage = 1;
+}
+
+int Stage_ ::ShowStage()
+{
+	return Stage;
+}
 
 
 
@@ -249,12 +269,11 @@ void Bullet::hide()
 //객체 생성 
 Hero hero;
 Enemy enemy[ENEMY_NUM];
-
 Enemy enemy_Down_S1[ENEMY_NUM];
 Enemy enemy_Right_S1[ENEMY_NUM];
 Enemy enemy_Left_S1[ENEMY_NUM];
 Bullet bullet;
-
+Stage_ S;
 
 // the entry point for any Windows program
 int WINAPI WinMain(HINSTANCE hInstance,
@@ -277,7 +296,7 @@ int WINAPI WinMain(HINSTANCE hInstance,
 	RegisterClassEx(&wc);
 
 	hWnd = CreateWindowEx(NULL, L"WindowClass", L"Our Direct3D Program",
-		WS_OVERLAPPEDWINDOW, 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT,
+		WS_OVERLAPPEDWINDOW, 400, 100, SCREEN_WIDTH, SCREEN_HEIGHT,
 		NULL, NULL, hInstance, NULL);
 
 	ShowWindow(hWnd, nCmdShow);
@@ -307,7 +326,7 @@ int WINAPI WinMain(HINSTANCE hInstance,
 		}
 
 		do_game_logic();
-
+		S.Stage++;
 		render_frame();
 
 		// check the 'escape' key
@@ -450,12 +469,17 @@ void init_game(void)
 
 		enemy[i].init((float)(10 + 60 * i), 0);
 		enemy_Down_S1[i].init((float)(10 + 60 * i), 416);
-		enemy_Right_S1[i].init(-64, (float)(10 + 60 * i));
-		enemy_Left_S1[i].init(640, (float)(10 + 60 * i));
+		enemy_Right_S1[i].init(-64, (float)( 64 * i));
+		enemy_Left_S1[i].init(800, (float)(64 * i));
 	}
 
 	//총알 초기화 
-	bullet.init(hero.x_pos, hero.y_pos);
+	bullet.bShow = true;
+	bullet.init(enemy[3].x_pos, enemy[3].y_pos);
+
+
+	//스테이지 초기화
+	S.Stage = 1;
 
 }
 
@@ -481,61 +505,59 @@ void do_game_logic(void)
 	for (int i = 0; i<ENEMY_NUM; i++)
 	{
 		if (enemy[i].y_pos > 480)
+		{	
+
 			enemy[i].init((float)(10 + 60 * i), 0);
+		}
 		else
-			enemy[i].move();
+		
+
+		enemy[i].move();
+
 
 		if (enemy_Down_S1[i].y_pos < -64)
+		{
 			enemy_Down_S1[i].init((float)(10 + 60 * i), 416);
+		}
 		else
 			enemy_Down_S1[i].move_up();
 
-		if (enemy_Right_S1[i].x_pos > 640)
-			enemy_Right_S1[i].init(-64, (float)(10 + 60 * i));
+		if (enemy_Right_S1[i].x_pos > 800)
+			enemy_Right_S1[i].init(-64, (float)(64 * i));
 		else
 			enemy_Right_S1[i].move_right();
 
 		if (enemy_Left_S1[i].x_pos < -64)
-			enemy_Left_S1[i].init(640, (float)(10 + 60 * i));
+			enemy_Left_S1[i].init(800, (float)(64 * i));
 		else
 			enemy_Left_S1[i].move_left();
+
+
 	}
 
+			
 
 	//총알 처리 
-	if (bullet.show() == false)
-	{
-		if (KEY_DOWN(VK_SPACE))
-		{
-			bullet.active();
-			bullet.init(hero.x_pos, hero.y_pos);
-		}
-
-
-	}
-
-
-	if (bullet.show() == true)
-	{
-		if (bullet.y_pos < -70)
+		if (bullet.y_pos > 480)
 			bullet.hide();
 		else
+			
 			bullet.move();
 
 
-		//충돌 처리 
-		for (int i = 0; i<ENEMY_NUM; i++)
-		{
-			if (bullet.check_collision(enemy[i].x_pos, enemy[i].y_pos) == true)
-			{
-				enemy[i].init((float)(rand() % 300), rand() % 200 - 300);
+//	//충돌 처리 
+//	for (int i = 0; i<ENEMY_NUM; i++)
+//	{
+//		if (bullet.check_collision(enemy[i].x_pos, enemy[i].y_pos) == true)
+//		{
+//			enemy[i].init((float)(rand() % 300), rand() % 200 - 300);
+//
+//		}
+//	}
 
-			}
-		}
 
-
-
-	}
+		
+	
 
 
 
@@ -577,7 +599,7 @@ void render_frame(void)
 	d3dspt->Draw(sprite_hero, &part, &center, &position, D3DCOLOR_ARGB(255, 255, 255, 255));
 
 	////총알 
-	if (bullet.bShow == true)
+	if (bullet.bShow == true  &&S.Stage == 2 )
 	{
 		RECT part1;
 		SetRect(&part1, 0, 0, 64, 64);
@@ -591,7 +613,6 @@ void render_frame(void)
 	RECT part2;
 	SetRect(&part2, 0, 0, 64, 64);
 	D3DXVECTOR3 center2(0.0f, 0.0f, 0.0f);    // center at the upper-left corner
-
 	for (int i = 0; i<ENEMY_NUM; i++)
 	{
 
@@ -624,6 +645,7 @@ void render_frame(void)
 	RECT part5;
 	SetRect(&part5, 0, 0, 64, 64);
 	D3DXVECTOR3 center5(0.0f, 0.0f, 0.0f);    // center at the upper-left corner
+
 
 	for (int i = 0; i<ENEMY_NUM; i++)
 	{
