@@ -1,4 +1,4 @@
-// include the basic windows header files and the Direct3D header file
+Ôªø// include the basic windows header files and the Direct3D header file
 #include <windows.h>
 #include <windowsx.h>
 #include <d3d9.h>
@@ -52,7 +52,7 @@ using namespace std;
 enum { MOVE_UP, MOVE_DOWN, MOVE_LEFT, MOVE_RIGHT };
 
 
-//±‚∫ª ≈¨∑°Ω∫ 
+//Í∏∞Î≥∏ ÌÅ¥ÎûòÏä§ 
 class entity {
 
 public:
@@ -76,7 +76,7 @@ bool sphere_collision_check(float x0, float y0, float size0, float x1, float y1,
 
 
 
-//¡÷¿Œ∞¯ ≈¨∑°Ω∫ 
+//Ï£ºÏù∏Í≥µ ÌÅ¥ÎûòÏä§ 
 class Hero :public entity {
 
 public:
@@ -125,14 +125,16 @@ void Hero::move(int i)
 
 
 
-// ¿˚ ≈¨∑°Ω∫ 
+// Ï†Å ÌÅ¥ÎûòÏä§ 
 class Enemy :public entity {
 
 public:
 	void fire();
 	void init(float x, float y);
 	void move();
-
+	void move_up();
+	void move_right();
+	void move_left();
 };
 
 void Enemy::init(float x, float y)
@@ -151,11 +153,24 @@ void Enemy::move()
 }
 
 
+void Enemy::move_up()
+{
+	y_pos -= 2;
+}
+
+void Enemy::move_right()
+{
+	x_pos += 2.5;
+}
+
+void Enemy::move_left()
+{
+	x_pos -= 2.5;
+}
 
 
 
-
-// √—æÀ ≈¨∑°Ω∫ 
+// Ï¥ùÏïå ÌÅ¥ÎûòÏä§ 
 class Bullet :public entity {
 
 public:
@@ -175,7 +190,7 @@ public:
 bool Bullet::check_collision(float x, float y)
 {
 
-	//√Êµπ √≥∏Æ Ω√ 
+	//Ï∂©Îèå Ï≤òÎ¶¨ Ïãú 
 	if (sphere_collision_check(x_pos, y_pos, 32, x, y, 32) == true)
 	{
 		bShow = false;
@@ -231,11 +246,14 @@ void Bullet::hide()
 
 
 
-//∞¥√º ª˝º∫ 
+//Í∞ùÏ≤¥ ÏÉùÏÑ± 
 Hero hero;
 Enemy enemy[ENEMY_NUM];
-Bullet bullet;
 
+Enemy enemy_Down_S1[ENEMY_NUM];
+Enemy enemy_Right_S1[ENEMY_NUM];
+Enemy enemy_Left_S1[ENEMY_NUM];
+Bullet bullet;
 
 
 // the entry point for any Windows program
@@ -259,7 +277,7 @@ int WINAPI WinMain(HINSTANCE hInstance,
 	RegisterClassEx(&wc);
 
 	hWnd = CreateWindowEx(NULL, L"WindowClass", L"Our Direct3D Program",
-		WS_EX_TOPMOST | WS_POPUP, 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT,
+		WS_OVERLAPPEDWINDOW, 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT,
 		NULL, NULL, hInstance, NULL);
 
 	ShowWindow(hWnd, nCmdShow);
@@ -268,7 +286,7 @@ int WINAPI WinMain(HINSTANCE hInstance,
 	initD3D(hWnd);
 
 
-	//∞‘¿” ø¿∫Í¡ß∆Æ √ ±‚»≠ 
+	//Í≤åÏûÑ Ïò§Î∏åÏ†ùÌä∏ Ï¥àÍ∏∞Ìôî 
 	init_game();
 
 	// enter the main loop:
@@ -333,7 +351,7 @@ void initD3D(HWND hWnd)
 	D3DPRESENT_PARAMETERS d3dpp;
 
 	ZeroMemory(&d3dpp, sizeof(d3dpp));
-	d3dpp.Windowed = FALSE;
+	d3dpp.Windowed = TRUE;
 	d3dpp.SwapEffect = D3DSWAPEFFECT_DISCARD;
 	d3dpp.hDeviceWindow = hWnd;
 	d3dpp.BackBufferFormat = D3DFMT_X8R8G8B8;
@@ -423,17 +441,20 @@ void initD3D(HWND hWnd)
 
 void init_game(void)
 {
-	//∞¥√º √ ±‚»≠ 
+	//Í∞ùÏ≤¥ Ï¥àÍ∏∞Ìôî 
 	hero.init(150, 300);
 
-	//¿˚µÈ √ ±‚»≠ 
+	//Ï†ÅÎì§ Ï¥àÍ∏∞Ìôî 
 	for (int i = 0; i<ENEMY_NUM; i++)
 	{
 
-		enemy[i].init((float)(rand() % 300), rand() % 200 - 300);
+		enemy[i].init((float)(10 + 60 * i), 0);
+		enemy_Down_S1[i].init((float)(10 + 60 * i), 416);
+		enemy_Right_S1[i].init(-64, (float)(10 + 60 * i));
+		enemy_Left_S1[i].init(640, (float)(10 + 60 * i));
 	}
 
-	//√—æÀ √ ±‚»≠ 
+	//Ï¥ùÏïå Ï¥àÍ∏∞Ìôî 
 	bullet.init(hero.x_pos, hero.y_pos);
 
 }
@@ -442,7 +463,7 @@ void init_game(void)
 void do_game_logic(void)
 {
 
-	//¡÷¿Œ∞¯ √≥∏Æ 
+	//Ï£ºÏù∏Í≥µ Ï≤òÎ¶¨ 
 	if (KEY_DOWN(VK_UP))
 		hero.move(MOVE_UP);
 
@@ -456,17 +477,32 @@ void do_game_logic(void)
 		hero.move(MOVE_RIGHT);
 
 
-	//¿˚µÈ √≥∏Æ 
+	//Ï†ÅÎì§ Ï≤òÎ¶¨ 
 	for (int i = 0; i<ENEMY_NUM; i++)
 	{
-		if (enemy[i].y_pos > 500)
-			enemy[i].init((float)(rand() % 300), rand() % 200 - 300);
+		if (enemy[i].y_pos > 480)
+			enemy[i].init((float)(10 + 60 * i), 0);
 		else
 			enemy[i].move();
+
+		if (enemy_Down_S1[i].y_pos < -64)
+			enemy_Down_S1[i].init((float)(10 + 60 * i), 416);
+		else
+			enemy_Down_S1[i].move_up();
+
+		if (enemy_Right_S1[i].x_pos > 640)
+			enemy_Right_S1[i].init(-64, (float)(10 + 60 * i));
+		else
+			enemy_Right_S1[i].move_right();
+
+		if (enemy_Left_S1[i].x_pos < -64)
+			enemy_Left_S1[i].init(640, (float)(10 + 60 * i));
+		else
+			enemy_Left_S1[i].move_left();
 	}
 
 
-	//√—æÀ √≥∏Æ 
+	//Ï¥ùÏïå Ï≤òÎ¶¨ 
 	if (bullet.show() == false)
 	{
 		if (KEY_DOWN(VK_SPACE))
@@ -487,7 +523,7 @@ void do_game_logic(void)
 			bullet.move();
 
 
-		//√Êµπ √≥∏Æ 
+		//Ï∂©Îèå Ï≤òÎ¶¨ 
 		for (int i = 0; i<ENEMY_NUM; i++)
 		{
 			if (bullet.check_collision(enemy[i].x_pos, enemy[i].y_pos) == true)
@@ -515,7 +551,7 @@ void render_frame(void)
 
 	d3dspt->Begin(D3DXSPRITE_ALPHABLEND);    // // begin sprite drawing with transparency
 
-											 //UI √¢ ∑ª¥ı∏µ 
+											 //UI Ï∞Ω Î†åÎçîÎßÅ 
 
 
 											 /*
@@ -533,14 +569,14 @@ void render_frame(void)
 											 d3dspt->Draw(sprite, &part, &center, &position, D3DCOLOR_ARGB(127, 255, 255, 255));
 											 */
 
-											 //¡÷¿Œ∞¯ 
+											 //Ï£ºÏù∏Í≥µ 
 	RECT part;
 	SetRect(&part, 0, 0, 64, 64);
 	D3DXVECTOR3 center(0.0f, 0.0f, 0.0f);    // center at the upper-left corner
 	D3DXVECTOR3 position(hero.x_pos, hero.y_pos, 0.0f);    // position at 50, 50 with no depth
 	d3dspt->Draw(sprite_hero, &part, &center, &position, D3DCOLOR_ARGB(255, 255, 255, 255));
 
-	////√—æÀ 
+	////Ï¥ùÏïå 
 	if (bullet.bShow == true)
 	{
 		RECT part1;
@@ -551,7 +587,7 @@ void render_frame(void)
 	}
 
 
-	////ø°≥◊πÃ 
+	////ÏóêÎÑ§ÎØ∏ 
 	RECT part2;
 	SetRect(&part2, 0, 0, 64, 64);
 	D3DXVECTOR3 center2(0.0f, 0.0f, 0.0f);    // center at the upper-left corner
@@ -562,6 +598,41 @@ void render_frame(void)
 		D3DXVECTOR3 position2(enemy[i].x_pos, enemy[i].y_pos, 0.0f);    // position at 50, 50 with no depth
 		d3dspt->Draw(sprite_enemy, &part2, &center2, &position2, D3DCOLOR_ARGB(255, 255, 255, 255));
 	}
+	RECT part3;
+	SetRect(&part3, 0, 0, 64, 64);
+	D3DXVECTOR3 center3(0.0f, 0.0f, 0.0f);    // center at the upper-left corner
+
+	for (int i = 0; i<ENEMY_NUM; i++)
+	{
+
+		D3DXVECTOR3 position3(enemy_Down_S1[i].x_pos, enemy_Down_S1[i].y_pos, 0.0f);    // position at 50, 50 with no depth
+		d3dspt->Draw(sprite_enemy, &part3, &center3, &position3, D3DCOLOR_ARGB(255, 255, 255, 255));
+	}
+
+	RECT part4;
+	SetRect(&part4, 0, 0, 64, 64);
+	D3DXVECTOR3 center4(0.0f, 0.0f, 0.0f);    // center at the upper-left corner
+
+	for (int i = 0; i<ENEMY_NUM; i++)
+	{
+
+		D3DXVECTOR3 position4(enemy_Right_S1[i].x_pos, enemy_Right_S1[i].y_pos, 0.0f);    // position at 50, 50 with no depth
+		d3dspt->Draw(sprite_enemy, &part4, &center4, &position4, D3DCOLOR_ARGB(255, 255, 255, 255));
+	}
+
+	
+	RECT part5;
+	SetRect(&part5, 0, 0, 64, 64);
+	D3DXVECTOR3 center5(0.0f, 0.0f, 0.0f);    // center at the upper-left corner
+
+	for (int i = 0; i<ENEMY_NUM; i++)
+	{
+
+		D3DXVECTOR3 position5(enemy_Left_S1[i].x_pos, enemy_Left_S1[i].y_pos, 0.0f);    // position at 50, 50 with no depth
+		d3dspt->Draw(sprite_enemy, &part5, &center5, &position5, D3DCOLOR_ARGB(255, 255, 255, 255));
+	}
+
+
 
 
 
@@ -582,7 +653,7 @@ void cleanD3D(void)
 	d3ddev->Release();
 	d3d->Release();
 
-	//∞¥√º «ÿ¡¶ 
+	//Í∞ùÏ≤¥ Ìï¥Ï†ú 
 	sprite_hero->Release();
 	sprite_enemy->Release();
 	sprite_bullet->Release();
