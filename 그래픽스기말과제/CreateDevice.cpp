@@ -4,6 +4,11 @@
 #include <d3d9.h>
 #include <d3dx9.h>
 #include <iostream>
+#include <time.h>
+#include <string.h>
+#include <conio.h>
+#include <stdio.h>
+
 
 // define the screen resolution and keyboard macros
 #define SCREEN_WIDTH  800
@@ -11,7 +16,7 @@
 #define KEY_DOWN(vk_code) ((GetAsyncKeyState(vk_code) & 0x8000) ? 1 : 0)
 #define KEY_UP(vk_code) ((GetAsyncKeyState(vk_code) & 0x8000) ? 0 : 1)
 
-#define ENEMY_NUM 10 
+#define ENEMY_NUM 10  
 
 
 // include the Direct3D Library file
@@ -22,8 +27,14 @@
 LPDIRECT3D9 d3d;    // the pointer to our Direct3D interface
 LPDIRECT3DDEVICE9 d3ddev;    // the pointer to the device class
 LPD3DXSPRITE d3dspt;    // the pointer to our Direct3D Sprite interface
+LPD3DXFONT dxfont; // 폰트 오브젝트의 포인터
 
 
+//-----------------------------------------------
+// 타이머
+//-----------------------------------------------
+int Time=0;
+char g_strMessage[200]; // 게임 상태를 저장하는 문자열
 
 						// sprite declarations
 LPDIRECT3DTEXTURE9 sprite;    // the pointer to the sprite
@@ -314,7 +325,14 @@ int WINAPI WinMain(HINSTANCE hInstance,
 
 	while (TRUE)
 	{
+
 		DWORD starting_point = GetTickCount();
+		clock_t CurTime = clock();
+		Time = CurTime / 1000;
+		
+		sprintf_s(g_strMessage, sizeof(g_strMessage),"버틴 시간 : %d 초",  Time);
+		
+
 
 		if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
 		{
@@ -324,7 +342,7 @@ int WINAPI WinMain(HINSTANCE hInstance,
 			TranslateMessage(&msg);
 			DispatchMessage(&msg);
 		}
-
+		
 		do_game_logic();
 		S.Stage++;
 		render_frame();
@@ -450,7 +468,18 @@ void initD3D(HWND hWnd)
 		NULL,    // not using 256 colors
 		&sprite_bullet);    // load to sprite
 
-
+	D3DXCreateFont(d3ddev, // d3d디바이스
+		40, // 폰트 높이
+		0, // 폰트 넓이
+		FW_NORMAL, //폰트 굵기
+		1, // MipLevel
+		TRUE, // italic font
+		DEFAULT_CHARSET, // default character set
+		OUT_DEFAULT_PRECIS, 
+		DEFAULT_QUALITY,
+		DEFAULT_PITCH | FF_DONTCARE,
+		L"Arial",
+		&dxfont);
 
 
 
@@ -462,6 +491,8 @@ void init_game(void)
 {
 	//객체 초기화 
 	hero.init(150, 300);
+
+	
 
 	//적들 초기화 
 	for (int i = 0; i<ENEMY_NUM; i++)
@@ -554,9 +585,6 @@ void do_game_logic(void)
 //
 //		}
 //	}
-
-
-		
 	
 
 
@@ -574,6 +602,23 @@ void render_frame(void)
 	d3dspt->Begin(D3DXSPRITE_ALPHABLEND);    // // begin sprite drawing with transparency
 
 											 //UI 창 렌더링 
+
+	
+
+	
+
+	
+	static RECT textbox;
+	SetRect(&textbox, 0, 0, 720, 200); // create a RECT to contain the text
+	
+	// draw the Hello World text
+	dxfont->DrawTextA(NULL,
+		g_strMessage,
+		-1,
+		&textbox,
+		DT_CENTER | DT_VCENTER,
+		D3DCOLOR_ARGB(255, 255, 255, 255));
+	
 
 
 											 /*
@@ -670,15 +715,20 @@ void render_frame(void)
 
 // this is the function that cleans up Direct3D and COM
 void cleanD3D(void)
-{
+{	
+	
+	dxfont->Release();
 	sprite->Release();
 	d3ddev->Release();
 	d3d->Release();
+
+
 
 	//객체 해제 
 	sprite_hero->Release();
 	sprite_enemy->Release();
 	sprite_bullet->Release();
+	
 
 	return;
 }
