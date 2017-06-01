@@ -407,9 +407,9 @@ void initD3D(HWND hWnd)
 	D3DXCreateSprite(d3ddev, &d3dspt);    // create the Direct3D Sprite object
 
 	D3DXCreateTextureFromFileEx(d3ddev,    // the device pointer
-		L"Panel3.png",    // the file name
-		D3DX_DEFAULT,    // default width
-		D3DX_DEFAULT,    // default height
+		L"Background.png",    // the file name
+		800,    // default width
+		640,    // default height
 		D3DX_DEFAULT,    // no mip mapping
 		NULL,    // regular usage
 		D3DFMT_A8R8G8B8,    // 32-bit pixels with alpha
@@ -610,31 +610,24 @@ void render_frame(void)
 	
 	static RECT textbox;
 	SetRect(&textbox, 0, 0, 720, 200); // create a RECT to contain the text
-	
-	// draw the Hello World text
+		// draw the Hello World text
 	dxfont->DrawTextA(NULL,
 		g_strMessage,
 		-1,
 		&textbox,
 		DT_CENTER | DT_VCENTER,
 		D3DCOLOR_ARGB(255, 255, 255, 255));
+
+	RECT Back;
+	SetRect(&Back, 0, 0, 800, 640);
+	D3DXVECTOR3 center0(0.0f, 0.0f, 0.0f);    // center at the upper-left corner
+	D3DXVECTOR3 position0(0, 0, 0.0f);    // position at 50, 50 with no depth
+	d3dspt->Draw(sprite, &Back, &center0, &position0, D3DCOLOR_ARGB(255, 255, 255, 255));
+
+
+
 	
 
-
-											 /*
-											 static int frame = 21;    // start the program on the final frame
-											 if(KEY_DOWN(VK_SPACE)) frame=0;     // when the space key is pressed, start at frame 0
-											 if(frame < 21) frame++;     // if we aren't on the last frame, go to the next frame
-
-											 // calculate the x-position
-											 int xpos = frame * 182 + 1;
-
-											 RECT part;
-											 SetRect(&part, xpos, 0, xpos + 181, 128);
-											 D3DXVECTOR3 center(0.0f, 0.0f, 0.0f);    // center at the upper-left corner
-											 D3DXVECTOR3 position(150.0f, 50.0f, 0.0f);    // position at 50, 50 with no depth
-											 d3dspt->Draw(sprite, &part, &center, &position, D3DCOLOR_ARGB(127, 255, 255, 255));
-											 */
 
 											 //주인공 
 	RECT part;
