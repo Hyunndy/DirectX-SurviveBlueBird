@@ -16,8 +16,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="CreateDevice.cpp" />
-  </ItemGroup>
-  <ItemGroup>
+    <ClCompile Include="Sound.cpp" />
   </ItemGroup>
   <ItemGroup>
     <CLInclude Include="resource.h">
@@ -26,6 +25,7 @@
     <ResourceCompile Include="CreateDevice.rc">
       <Filter>Resource Files</Filter>
     </ResourceCompile>
+    <ClInclude Include="Sound.h" />
   </ItemGroup>
   <ItemGroup>
   </ItemGroup>

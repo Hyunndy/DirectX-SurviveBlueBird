@@ -2,13 +2,12 @@
 #include <windows.h>
 #include <windowsx.h>
 #include <d3d9.h>
-#include <d3dx9.h>
+#include <d3dx9.h> 
 #include <iostream>
 #include <time.h>
 #include <string.h>
-#include <conio.h>
 #include <stdio.h>
-
+#include <fmod.h> //사운드
 
 // define the screen resolution and keyboard macros
 #define SCREEN_WIDTH  800
@@ -22,6 +21,8 @@
 // include the Direct3D Library file
 #pragma comment (lib, "d3d9.lib")
 #pragma comment (lib, "d3dx9.lib")
+#pragma  comment( lib, "fmod_vc.lib")
+
 
 // global declarations
 LPDIRECT3D9 d3d;    // the pointer to our Direct3D interface
@@ -41,6 +42,15 @@ LPDIRECT3DTEXTURE9 sprite;    // the pointer to the sprite
 LPDIRECT3DTEXTURE9 sprite_hero;    // the pointer to the sprite
 LPDIRECT3DTEXTURE9 sprite_enemy;    // the pointer to the sprite
 LPDIRECT3DTEXTURE9 sprite_bullet;    // the pointer to the sprite
+
+//----------------------------------------------------
+// FMOD 사운드 시스템 생성과 초기화
+//----------------------------------------------------
+
+FMOD_SYSTEM *g_System;
+FMOD_SOUND *Sound;
+FMOD_CHANNEL *Channel;
+FMOD_CHANNELGROUP *g_ChannelGroup;
 
 
 
@@ -332,7 +342,7 @@ int WINAPI WinMain(HINSTANCE hInstance,
 		
 		sprintf_s(g_strMessage, sizeof(g_strMessage),"버틴 시간 : %d 초",  Time);
 		
-
+		FMOD_System_Update(g_System);
 
 		if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
 		{
@@ -482,6 +492,14 @@ void initD3D(HWND hWnd)
 		&dxfont);
 
 
+	//-----------------------------------------------
+	// FMOD사운드 초기화
+	//-----------------------------------------------
+	FMOD_System_Create(&g_System);
+	FMOD_System_Init(g_System, 32, FMOD_INIT_NORMAL, NULL);
+	FMOD_System_CreateSound(g_System, "Sound.mp3", FMOD_DEFAULT, 0, &Sound);
+	
+
 
 	return;
 }
@@ -492,7 +510,8 @@ void init_game(void)
 	//객체 초기화 
 	hero.init(150, 300);
 
-	
+	// 사운드
+	FMOD_System_PlaySound(g_System, Sound, g_ChannelGroup, 0, &Channel);
 
 	//적들 초기화 
 	for (int i = 0; i<ENEMY_NUM; i++)
@@ -517,6 +536,7 @@ void init_game(void)
 
 void do_game_logic(void)
 {
+
 
 	//주인공 처리 
 	if (KEY_DOWN(VK_UP))
@@ -604,7 +624,8 @@ void render_frame(void)
 											 //UI 창 렌더링 
 
 	
-
+	
+	
 	
 
 	
@@ -718,6 +739,9 @@ void cleanD3D(void)
 
 
 	//객체 해제 
+	FMOD_Sound_Release(Sound);
+	FMOD_System_Close(g_System);
+	FMOD_System_Release(g_System);
 	sprite_hero->Release();
 	sprite_enemy->Release();
 	sprite_bullet->Release();
