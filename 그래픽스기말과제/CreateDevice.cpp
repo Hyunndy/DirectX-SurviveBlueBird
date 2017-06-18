@@ -433,7 +433,7 @@ void initD3D(HWND hWnd)
 
 
 	D3DXCreateTextureFromFileEx(d3ddev,    // the device pointer
-		L"hero.png",    // the file name
+		L"hero1.png",    // the file name
 		D3DX_DEFAULT,    // default width
 		D3DX_DEFAULT,    // default height
 		D3DX_DEFAULT,    // no mip mapping
@@ -482,7 +482,7 @@ void initD3D(HWND hWnd)
 		40, // 폰트 높이
 		0, // 폰트 넓이
 		FW_NORMAL, //폰트 굵기
-		1, // MipLevel
+		D3DX_DEFAULT, // MipLevel
 		TRUE, // italic font
 		DEFAULT_CHARSET, // default character set
 		OUT_DEFAULT_PRECIS, 
@@ -620,14 +620,26 @@ void render_frame(void)
 	d3ddev->BeginScene();    // begins the 3D scene
 
 	d3dspt->Begin(D3DXSPRITE_ALPHABLEND);    // // begin sprite drawing with transparency
+	
+	static int frame = 0;
+	if (KEY_DOWN(VK_LEFT)||(KEY_DOWN(VK_RIGHT))) frame += 1;
+	if (frame == 4) frame = 0;
+	
+	int xpos = frame * 64;
 
-											 //UI 창 렌더링 
 
-	
-	
-	
+	//타이머
+
+										
+	// 배경
 	
 
+
+RECT Back;
+SetRect(&Back, 0, 0, 800, 640);
+D3DXVECTOR3 center0(0.0f, 0.0f, 0.0f);    // center at the upper-left corner
+D3DXVECTOR3 position0(0, 0, 0.0f);    // position at 50, 50 with no depth
+d3dspt->Draw(sprite, &Back, &center0, &position0, D3DCOLOR_ARGB(255, 255, 255, 255));
 	
 	static RECT textbox;
 	SetRect(&textbox, 0, 0, 720, 200); // create a RECT to contain the text
@@ -637,25 +649,16 @@ void render_frame(void)
 		-1,
 		&textbox,
 		DT_CENTER | DT_VCENTER,
-		D3DCOLOR_ARGB(255, 255, 255, 255));
-
-	RECT Back;
-	SetRect(&Back, 0, 0, 800, 640);
-	D3DXVECTOR3 center0(0.0f, 0.0f, 0.0f);    // center at the upper-left corner
-	D3DXVECTOR3 position0(0, 0, 0.0f);    // position at 50, 50 with no depth
-	d3dspt->Draw(sprite, &Back, &center0, &position0, D3DCOLOR_ARGB(255, 255, 255, 255));
+		D3DCOLOR_ARGB(255, 0,0, 0));
 
 
-
-	
-
-
-											 //주인공 
+	//주인공 
 	RECT part;
-	SetRect(&part, 0, 0, 64, 64);
+	SetRect(&part, xpos, 0,xpos+65,63);
 	D3DXVECTOR3 center(0.0f, 0.0f, 0.0f);    // center at the upper-left corner
 	D3DXVECTOR3 position(hero.x_pos, hero.y_pos, 0.0f);    // position at 50, 50 with no depth
 	d3dspt->Draw(sprite_hero, &part, &center, &position, D3DCOLOR_ARGB(255, 255, 255, 255));
+
 
 	////총알 
 	if (bullet.bShow == true  &&S.Stage == 2 )
@@ -712,7 +715,6 @@ void render_frame(void)
 		D3DXVECTOR3 position5(enemy_Left_S1[i].x_pos, enemy_Left_S1[i].y_pos, 0.0f);    // position at 50, 50 with no depth
 		d3dspt->Draw(sprite_enemy, &part5, &center5, &position5, D3DCOLOR_ARGB(255, 255, 255, 255));
 	}
-
 
 
 
