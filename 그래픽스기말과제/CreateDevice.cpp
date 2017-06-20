@@ -41,6 +41,7 @@ char g_strMessage[200]; // 게임 상태를 저장하는 문자열
 LPDIRECT3DTEXTURE9 sprite;    // the pointer to the sprite
 LPDIRECT3DTEXTURE9 sprite_Start;    // the pointer to the sprite
 LPDIRECT3DTEXTURE9 sprite_hero;    // the pointer to the sprite
+LPDIRECT3DTEXTURE9 sprite_hero2;    // the pointer to the sprite
 LPDIRECT3DTEXTURE9 sprite_enemy_R;    // the pointer to the sprite
 LPDIRECT3DTEXTURE9 sprite_enemy_L;    // the pointer to the sprite
 LPDIRECT3DTEXTURE9 sprite_enemy_U;    // the pointer to the sprite
@@ -75,7 +76,7 @@ using namespace std;
 
 
 enum { MOVE_UP, MOVE_DOWN, MOVE_LEFT, MOVE_RIGHT };
-
+bool Move_L;
 
 //스테이지
 enum Game_State { INIT, READY, RUNNING, SCORE };
@@ -141,11 +142,13 @@ void Hero::move(int i)
 
 
 	case MOVE_LEFT:
+		Move_L = true;
 		x_pos -= 5;
 		break;
 
 
 	case MOVE_RIGHT:
+		Move_L = false;
 		x_pos += 5;
 		break;
 
@@ -196,6 +199,7 @@ void Enemy::move_right()
 
 void Enemy::move_left()
 {
+	
 	x_pos -= 2.5;
 }
 
@@ -475,6 +479,21 @@ void initD3D(HWND hWnd)
 		&sprite_hero);    // load to sprite
 
 	D3DXCreateTextureFromFileEx(d3ddev,    // the device pointer
+		L"hero2.png",    // the file name
+		D3DX_DEFAULT,    // default width
+		D3DX_DEFAULT,    // default height
+		D3DX_DEFAULT,    // no mip mapping
+		NULL,    // regular usage
+		D3DFMT_A8R8G8B8,    // 32-bit pixels with alpha
+		D3DPOOL_MANAGED,    // typical memory handling
+		D3DX_DEFAULT,    // no filtering
+		D3DX_DEFAULT,    // no mip filtering
+		D3DCOLOR_XRGB(255, 0, 255),    // the hot-pink color key
+		NULL,    // no image info struct
+		NULL,    // not using 256 colors
+		&sprite_hero2);    // load to sprite
+
+	D3DXCreateTextureFromFileEx(d3ddev,    // the device pointer
 		L"enemy_R.png",    // the file name
 		D3DX_DEFAULT,    // default width
 		D3DX_DEFAULT,    // default height
@@ -603,6 +622,9 @@ void init_game(void)
 	//스테이지 초기화
 	S.Stage = 1;
 
+	// 왼쪽오른쪽 초기화
+	Move_L = false;
+
 }
 
 
@@ -716,7 +738,8 @@ void render_frame(void)
 		break;
 	}
 	case RUNNING:
-	{//배경
+	{
+		//배경
 		RECT Back;
 		SetRect(&Back, 0, 0, 800, 640);
 		D3DXVECTOR3 center0(0.0f, 0.0f, 0.0f);    // center at the upper-left corner
@@ -737,27 +760,40 @@ void render_frame(void)
 
 
 		//주인공 
-		RECT part;
-		SetRect(&part, xpos, 0, xpos + 65, 63);
-		D3DXVECTOR3 center(0.0f, 0.0f, 0.0f);    // center at the upper-left corner
-		D3DXVECTOR3 position(hero.x_pos, hero.y_pos, 0.0f);    // position at 50, 50 with no depth
-		d3dspt->Draw(sprite_hero, &part, &center, &position, D3DCOLOR_ARGB(255, 255, 255, 255));
-
-
-		////총알 
-		if (bullet.bShow == true && S.Stage == 2)
+		if (Move_L == false)
 		{
-			RECT part1;
-			SetRect(&part1, 0, 0, 64, 64);
-			D3DXVECTOR3 center1(0.0f, 0.0f, 0.0f);    // center at the upper-left corner
-			D3DXVECTOR3 position1(bullet.x_pos, bullet.y_pos, 0.0f);    // position at 50, 50 with no depth
-			d3dspt->Draw(sprite_bullet, &part1, &center1, &position1, D3DCOLOR_ARGB(255, 255, 255, 255));
+			RECT part;
+			SetRect(&part, xpos, 0, xpos + 65, 63);
+			D3DXVECTOR3 center(0.0f, 0.0f, 0.0f);    // center at the upper-left corner
+			D3DXVECTOR3 position(hero.x_pos, hero.y_pos, 0.0f);    // position at 50, 50 with no depth
+			d3dspt->Draw(sprite_hero, &part, &center, &position, D3DCOLOR_ARGB(255, 255, 255, 255));
 		}
+
+		else
+		{
+			RECT part;
+			SetRect(&part, xpos, 0, xpos + 65, 63);
+			D3DXVECTOR3 center(0.0f, 0.0f, 0.0f);    // center at the upper-left corner
+			D3DXVECTOR3 position(hero.x_pos, hero.y_pos, 0.0f);    // position at 50, 50 with no depth
+			d3dspt->Draw(sprite_hero2, &part, &center, &position, D3DCOLOR_ARGB(255, 255, 255, 255));
+		}
+
+
+
+//	////총알 
+//	if (bullet.bShow == true && S.Stage == 2)
+//	{
+//		RECT part1;
+//		SetRect(&part1, 0, 0, 64, 10);
+//		D3DXVECTOR3 center1(0.0f, 0.0f, 0.0f);    // center at the upper-left corner
+//		D3DXVECTOR3 position1(bullet.x_pos, bullet.y_pos, 0.0f);    // position at 50, 50 with no depth
+//		d3dspt->Draw(sprite_bullet, &part1, &center1, &position1, D3DCOLOR_ARGB(255, 255, 255, 255));
+//	}
 
 
 		////에네미 
 		RECT part2;
-		SetRect(&part2, 0, 0, 64, 64);
+		SetRect(&part2, 0, 0, 35, 64);
 		D3DXVECTOR3 center2(0.0f, 0.0f, 0.0f);    // center at the upper-left corner
 		for (int i = 0; i < ENEMY_NUM; i++)
 		{
@@ -766,7 +802,7 @@ void render_frame(void)
 			d3dspt->Draw(sprite_enemy_U, &part2, &center2, &position2, D3DCOLOR_ARGB(255, 255, 255, 255));
 		}
 		RECT part3;
-		SetRect(&part3, 0, 0, 64, 64);
+		SetRect(&part3, 0, 0, 35, 64);
 		D3DXVECTOR3 center3(0.0f, 0.0f, 0.0f);    // center at the upper-left corner
 
 		for (int i = 0; i < ENEMY_NUM; i++)
@@ -777,7 +813,7 @@ void render_frame(void)
 		}
 
 		RECT part4;
-		SetRect(&part4, 0, 0, 64, 64);
+		SetRect(&part4, 0, 0, 64, 35);
 		D3DXVECTOR3 center4(0.0f, 0.0f, 0.0f);    // center at the upper-left corner
 
 		for (int i = 0; i < ENEMY_NUM; i++)
@@ -789,7 +825,7 @@ void render_frame(void)
 
 
 		RECT part5;
-		SetRect(&part5, 0, 0, 64, 64);
+		SetRect(&part5, 0, 0, 64, 35);
 		D3DXVECTOR3 center5(0.0f, 0.0f, 0.0f);    // center at the upper-left corner
 
 
@@ -843,6 +879,7 @@ void cleanD3D(void)
 	FMOD_System_Release(g_System);
 	sprite_Start->Release();
 	sprite_hero->Release();
+	sprite_hero2->Release();
 	sprite_enemy_R->Release();
 	sprite_enemy_L->Release();
 	sprite_enemy_U->Release();
