@@ -38,8 +38,13 @@ LPD3DXFONT dxfont; // 폰트 오브젝트의 포인터
 //-----------------------------------------------
 int Time=0;
 char g_strMessage[200]; // 게임 상태를 저장하는 문자열
-
-						// sprite declarations
+char ScoreMessage[200];
+int TimeScore;
+clock_t CurTime;
+int sibal;
+			int OldTime;
+		clock_t ssibal;
+					// sprite declarations
 LPDIRECT3DTEXTURE9 sprite;    // the pointer to the sprite
 LPDIRECT3DTEXTURE9 sprite_Start;    // the pointer to the sprite
 LPDIRECT3DTEXTURE9 sprite_hero;    // the pointer to the sprite
@@ -95,6 +100,10 @@ bool Stage_Difficult2;
 bool S;
 bool S2;
 
+int n_Stage;
+int n_Stage2;
+
+
 //기본 클래스 
 class entity {
 
@@ -127,9 +136,50 @@ public:
 	void super_fire();
 	void move(int i);
 	void init(float x, float y);
+	bool check_collision(float x, float y);
 
+	int N_Death;
+	bool Heart1;
+	bool Heart2;
+	bool Heart3;
 
 };
+
+bool Hero::check_collision(float x, float y)
+{
+	if (sphere_collision_check(x_pos, y_pos, 15, x, y, 15) == true)
+	{
+	//Heart1=false;
+	//
+	//if (Heart1 == false)
+	//	Heart2 = false;
+	//else if (Heart2 == false)		
+	//	Heart3 = false;
+	//
+	//if (Heart1 == false && Heart2 == false && Heart3 == false)
+	//	g_GameState = SCORE;
+	//
+		return true;
+
+	}
+	else
+		return false;
+}
+//bool Bullet::check_collision(float x, float y)
+//{
+//
+//	//충돌 처리 시 
+//	if (sphere_collision_check(x_pos, y_pos, 32, x, y, 32) == true)
+//	{
+//		bShow = false;
+//		return true;
+//
+//	}
+//	else {
+//
+//		return false;
+//	}
+//}
 
 void Hero::init(float x, float y)
 {
@@ -166,8 +216,6 @@ void Hero::move(int i)
 	}
 
 }
-
-
 
 
 // 적 클래스 
@@ -225,6 +273,24 @@ Enemy enemy_Right_S1[ENEMY_NUM];
 Enemy enemy_Left_S1[ENEMY_NUM];
 
 
+
+
+// this is the main message handler for the program
+LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+{
+	switch (message)
+	{
+	case WM_DESTROY:
+	{
+		PostQuitMessage(0);
+		return 0;
+	} break;
+	}
+
+	return DefWindowProc(hWnd, message, wParam, lParam);
+}
+
+
 // the entry point for any Windows program
 int WINAPI WinMain(HINSTANCE hInstance,
 	HINSTANCE hPrevInstance,
@@ -266,13 +332,21 @@ int WINAPI WinMain(HINSTANCE hInstance,
 	{
 
 		DWORD starting_point = GetTickCount();
-		clock_t CurTime = clock();
-		Time = CurTime / 1000;
-		
-		sprintf_s(g_strMessage, sizeof(g_strMessage),"버틴 시간 : %d 초",  Time);
-		
-		FMOD_System_Update(g_System);
 
+		if (g_GameState == SCORE)
+		{
+			ssibal = clock();
+			OldTime = ssibal / 1000;
+		}
+
+		if (g_GameState == RUNNING)
+		{
+			CurTime = clock();
+			Time = CurTime / 1000  - OldTime;
+		}
+
+
+		FMOD_System_Update(g_System);
 		if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
 		{
 			if (msg.message == WM_QUIT)
@@ -281,17 +355,20 @@ int WINAPI WinMain(HINSTANCE hInstance,
 			TranslateMessage(&msg);
 			DispatchMessage(&msg);
 		}
-		
+
+
 		do_game_logic();
-	
 
 		render_frame();
-		
-		if(S==true)
-		Stage_Change();
 
-		if(S2 == true)
-		Stage_Change2();
+
+		if (S == true)
+			Stage_Change();
+
+		if (S2 == true)
+			Stage_Change2();
+
+
 
 
 		// check the 'escape' key
@@ -309,23 +386,6 @@ int WINAPI WinMain(HINSTANCE hInstance,
 
 	return msg.wParam;
 }
-
-
-// this is the main message handler for the program
-LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
-{
-	switch (message)
-	{
-	case WM_DESTROY:
-	{
-		PostQuitMessage(0);
-		return 0;
-	} break;
-	}
-
-	return DefWindowProc(hWnd, message, wParam, lParam);
-}
-
 
 // this function initializes and prepares Direct3D for use
 void initD3D(HWND hWnd)
@@ -506,14 +566,24 @@ void initD3D(HWND hWnd)
 
 void Stage_Change()
 {
+	n_Stage++;
+	if (n_Stage == 5)
+		n_Stage = 1;
+
 	if (Stage_Difficult == false )
 		Stage_Difficult = true;
 	else
 		Stage_Difficult = false;
+
+	
 }
 
 void Stage_Change2()
 {
+	n_Stage2++;
+	if (n_Stage2 == 5)
+		n_Stage2 = 1;
+
 	if (Stage_Difficult2 == false)
 		Stage_Difficult2 = true;
 	else
@@ -522,8 +592,16 @@ void Stage_Change2()
 
 void init_game(void)
 {
+	
+	
+	TimeScore = Time;
+	
 	//객체 초기화 
 	hero.init(150, 300);
+	hero.Heart1 = true;
+	hero.Heart2 = true;
+	hero.Heart3 = true;
+	hero.N_Death = 0;
 
 	// 사운드
 	
@@ -552,6 +630,11 @@ void init_game(void)
 	S = false;
 	S2 = false;
 
+	n_Stage = 1;
+	n_Stage2 = 1;
+
+
+
 	// 왼쪽오른쪽 초기화
 	Move_L = false;
 
@@ -560,92 +643,114 @@ void init_game(void)
 
 void do_game_logic(void)
 {
-
-
-	//주인공 처리 
-	if (KEY_DOWN(VK_UP))
-		hero.move(MOVE_UP);
-
-	if (KEY_DOWN(VK_DOWN))
-		hero.move(MOVE_DOWN);
-
-	if (KEY_DOWN(VK_LEFT))
-		hero.move(MOVE_LEFT);
-
-	if (KEY_DOWN(VK_RIGHT))
-		hero.move(MOVE_RIGHT);
-
 	
-	//적들 처리 
-	for (int i = 0; i < ENEMY_NUM2; i++)
+	
+	
+	if (g_GameState == RUNNING)
 	{
-		if (enemy[i].y_pos > 640)
-		{	
-			S2 = true;
-			enemy[i].init((float)(10 + 80 * i), -64);
+		sprintf_s(g_strMessage, sizeof(g_strMessage), "버틴 시간 : %d 초", Time);
 		
-		}
-		else
+		//주인공 처리 
+		if (KEY_DOWN(VK_UP))
+			hero.move(MOVE_UP);
+
+		if (KEY_DOWN(VK_DOWN))
+			hero.move(MOVE_DOWN);
+
+		if (KEY_DOWN(VK_LEFT))
+			hero.move(MOVE_LEFT);
+
+		if (KEY_DOWN(VK_RIGHT))
+			hero.move(MOVE_RIGHT);
+
+
+		//적들 처리 
+		for (int i = 0; i < ENEMY_NUM2; i++)
 		{
-			S2 = false;
-			enemy[i].move();
-			
+			if (enemy[i].y_pos > 640)
+			{
+				S2 = true;
+				enemy[i].init((float)(10 + 80 * i), -64);
+
+			}
+			else
+			{
+				S2 = false;
+				enemy[i].move();
+
+			}
+
+
+			if (enemy_Down_S1[i].y_pos < -64)
+			{
+				enemy_Down_S1[i].init((float)(10 + 80 * i), 640);
+
+			}
+
+			else
+				enemy_Down_S1[i].move_up();
 		}
 
-
-		if (enemy_Down_S1[i].y_pos < -64)
+		for (int i = 0; i < ENEMY_NUM; i++)
 		{
-			enemy_Down_S1[i].init((float)(10 + 80 * i), 640);
-	
-		}		
-		 
-		else
-			enemy_Down_S1[i].move_up();
-	}
 
-	for (int i = 0; i<ENEMY_NUM; i++)
-	{
-	
 
-		if (enemy_Right_S1[i].x_pos > 800)
-		{
-			S = true;
-			enemy_Right_S1[i].init(-64, (float)(80 * i));
+			if (enemy_Right_S1[i].x_pos > 800)
+			{
+				S = true;
+				enemy_Right_S1[i].init(-64, (float)(80 * i));
 
-		}
-		else
-			S = false;
+			}
+			else
+				S = false;
 			enemy_Right_S1[i].move_right();
 
 
-		if (enemy_Left_S1[i].x_pos < -64)
-		{
-			
-			enemy_Left_S1[i].init(800, (float)(80 * i));
+			if (enemy_Left_S1[i].x_pos < -64)
+			{
+
+				enemy_Left_S1[i].init(800, (float)(80 * i));
+			}
+
+			else
+				enemy_Left_S1[i].move_left();
+
 		}
 
-		else
-			enemy_Left_S1[i].move_left();
+
+
+
+
+		//충돌 처리 
+		for (int i = 0; i < ENEMY_NUM; i++)
+		{
+			if (hero.check_collision(enemy[i].x_pos, enemy[i].y_pos) == true)
+			{
+				hero.init(150, 300);
+				hero.N_Death++;
+
+				if (hero.N_Death == 1)
+					hero.Heart1 = false;
+				if (hero.N_Death == 2)
+					hero.Heart2 = false;
+				if (hero.N_Death == 3)
+					hero.Heart3 = false;
+
+				if (hero.N_Death == 4 && hero.Heart1 == false && hero.Heart2 == false && hero.Heart3 == false)
+				{
+					hero.N_Death = 0;
+					g_GameState = SCORE;
+					
+				}
+			}
+		}
 
 	}
-
-
-
-
-
-//	//충돌 처리 
-//	for (int i = 0; i<ENEMY_NUM; i++)
-//	{
-//		if (bullet.check_collision(enemy[i].x_pos, enemy[i].y_pos) == true)
-//		{
-//			enemy[i].init((float)(rand() % 300), rand() % 200 - 300);
-//
-//		}
-//	}
-	
-
 			
-
+	if (g_GameState == SCORE)
+	{
+		sprintf_s(ScoreMessage, sizeof(ScoreMessage), "버틴 시간 : %d 초", TimeScore);
+	}
 
 }
 
@@ -657,7 +762,7 @@ void render_frame(void)
 
 	d3ddev->BeginScene();    // begins the 3D scene
 
-	d3dspt->Begin(D3DXSPRITE_ALPHABLEND);    // // begin sprite drawing with transparency
+	d3dspt->Begin(D3DXSPRITE_ALPHABLEND);    // // begin sprite drawing with transparency             
 	
 	//주인공 애니메이션 프레임
 	static int frame = 0;
@@ -693,7 +798,7 @@ void render_frame(void)
 
 		//타이머
 		static RECT textbox;
-		SetRect(&textbox, 0, 0, 800, 100); // create a RECT to contain the text
+		SetRect(&textbox, 0, 0, 820, 120); // create a RECT to contain the text
 			// draw the Hello World text
 		dxfont->DrawTextA(NULL,
 			g_strMessage,
@@ -749,97 +854,194 @@ void render_frame(void)
 
 			if (Stage_Difficult == true)
 			{
-
-				for (int i = 0; i < ENEMY_NUM; i++)
+				if (n_Stage == 2)
 				{
+					for (int i = 0; i < ENEMY_NUM; i++)
+					{
 
-				D3DXVECTOR3 position4(enemy_Right_S1[i].x_pos, enemy_Right_S1[i].y_pos, 0.0f);    // position at 50, 50 with no depth
-				d3dspt->Draw(sprite_enemy_R, &part4, &center4, &position4, D3DCOLOR_ARGB(255, 255, 255, 255));
-				}			
-				for (int i = 0; i < ENEMY_NUM; i += 2)
+						D3DXVECTOR3 position4(enemy_Right_S1[i].x_pos, enemy_Right_S1[i].y_pos, 0.0f);    // position at 50, 50 with no depth
+						d3dspt->Draw(sprite_enemy_R, &part4, &center4, &position4, D3DCOLOR_ARGB(255, 255, 255, 255));
+					}
+					for (int i = 0; i < ENEMY_NUM; i += 2)
+					{
+
+						D3DXVECTOR3 position5(enemy_Left_S1[i].x_pos, enemy_Left_S1[i].y_pos, 0.0f);    // position at 50, 50 with no depth
+						d3dspt->Draw(sprite_enemy_L, &part5, &center5, &position5, D3DCOLOR_ARGB(255, 255, 255, 255));
+					}
+				}
+
+				if (n_Stage == 4)
 				{
-	
-				D3DXVECTOR3 position5(enemy_Left_S1[i].x_pos, enemy_Left_S1[i].y_pos, 0.0f);    // position at 50, 50 with no depth
-				d3dspt->Draw(sprite_enemy_L, &part5, &center5, &position5, D3DCOLOR_ARGB(255, 255, 255, 255));
-				}			
+					for (int i = 0; i < ENEMY_NUM; i++)
+					{
+
+						D3DXVECTOR3 position4(enemy_Right_S1[i].x_pos, enemy_Right_S1[i].y_pos, 0.0f);    // position at 50, 50 with no depth
+						d3dspt->Draw(sprite_enemy_R, &part4, &center4, &position4, D3DCOLOR_ARGB(255, 255, 255, 255));
+					}
+					for (int i = 0; i < ENEMY_NUM; i ++)
+					{
+
+						D3DXVECTOR3 position5(enemy_Left_S1[i].x_pos, enemy_Left_S1[i].y_pos, 0.0f);    // position at 50, 50 with no depth
+						d3dspt->Draw(sprite_enemy_L, &part5, &center5, &position5, D3DCOLOR_ARGB(255, 255, 255, 255));
+					}
+
+				}
 
 			}
 
 			else
 			{			
 				
-				for (int i = 0; i < ENEMY_NUM; i += 2)
+				if (n_Stage == 1)
 				{
+					for (int i = 0; i < ENEMY_NUM; i += 2)
+					{
 
-					D3DXVECTOR3 position4(enemy_Right_S1[i].x_pos, enemy_Right_S1[i].y_pos, 0.0f);    // position at 50, 50 with no depth
-					d3dspt->Draw(sprite_enemy_R, &part4, &center4, &position4, D3DCOLOR_ARGB(255, 255, 255, 255));
+						D3DXVECTOR3 position4(enemy_Right_S1[i].x_pos, enemy_Right_S1[i].y_pos, 0.0f);    // position at 50, 50 with no depth
+						d3dspt->Draw(sprite_enemy_R, &part4, &center4, &position4, D3DCOLOR_ARGB(255, 255, 255, 255));
+					}
+
+
+					for (int i = 0; i < ENEMY_NUM; i+=2)
+					{
+
+						D3DXVECTOR3 position5(enemy_Left_S1[i].x_pos, enemy_Left_S1[i].y_pos, 0.0f);    // position at 50, 50 with no depth
+						d3dspt->Draw(sprite_enemy_L, &part5, &center5, &position5, D3DCOLOR_ARGB(255, 255, 255, 255));
+					}
 				}
 
-
-				for (int i = 0; i < ENEMY_NUM; i++)
+				if (n_Stage == 3)
 				{
+					for (int i = 0; i < ENEMY_NUM; i +=2)
+					{
 
-				D3DXVECTOR3 position5(enemy_Left_S1[i].x_pos, enemy_Left_S1[i].y_pos, 0.0f);    // position at 50, 50 with no depth
-				d3dspt->Draw(sprite_enemy_L, &part5, &center5, &position5, D3DCOLOR_ARGB(255, 255, 255, 255));
+						D3DXVECTOR3 position4(enemy_Right_S1[i].x_pos, enemy_Right_S1[i].y_pos, 0.0f);    // position at 50, 50 with no depth
+						d3dspt->Draw(sprite_enemy_R, &part4, &center4, &position4, D3DCOLOR_ARGB(255, 255, 255, 255));
+					}
+
+
+					for (int i = 0; i < ENEMY_NUM; i++)
+					{
+
+						D3DXVECTOR3 position5(enemy_Left_S1[i].x_pos, enemy_Left_S1[i].y_pos, 0.0f);    // position at 50, 50 with no depth
+						d3dspt->Draw(sprite_enemy_L, &part5, &center5, &position5, D3DCOLOR_ARGB(255, 255, 255, 255));
+					}
 				}
 
 			}
 
 			if (Stage_Difficult2 == true)
 			{
-
-				for (int i = 0; i < ENEMY_NUM2; i++)
+				if (n_Stage2 == 2)
 				{
 
-					D3DXVECTOR3 position2(enemy[i].x_pos, enemy[i].y_pos, 0.0f);    // position at 50, 50 with no depth
-					d3dspt->Draw(sprite_enemy_U, &part2, &center2, &position2, D3DCOLOR_ARGB(255, 255, 255, 255));
+					for (int i = 0; i < ENEMY_NUM2; i++)
+					{
+
+						D3DXVECTOR3 position2(enemy[i].x_pos, enemy[i].y_pos, 0.0f);    // position at 50, 50 with no depth
+						d3dspt->Draw(sprite_enemy_U, &part2, &center2, &position2, D3DCOLOR_ARGB(255, 255, 255, 255));
+					}
+
+					for (int i = 0; i < ENEMY_NUM2; i += 2)
+					{
+
+						D3DXVECTOR3 position3(enemy_Down_S1[i].x_pos, enemy_Down_S1[i].y_pos, 0.0f);    // position at 50, 50 with no depth
+						d3dspt->Draw(sprite_enemy_D, &part3, &center3, &position3, D3DCOLOR_ARGB(255, 255, 255, 255));
+					}
 				}
 
-				for (int i = 0; i < ENEMY_NUM2; i += 2)
+				if (n_Stage2 == 4)
 				{
+					for (int i = 0; i < ENEMY_NUM2; i++)
+					{
 
-					D3DXVECTOR3 position3(enemy_Down_S1[i].x_pos, enemy_Down_S1[i].y_pos, 0.0f);    // position at 50, 50 with no depth
-					d3dspt->Draw(sprite_enemy_D, &part3, &center3, &position3, D3DCOLOR_ARGB(255, 255, 255, 255));
+						D3DXVECTOR3 position2(enemy[i].x_pos, enemy[i].y_pos, 0.0f);    // position at 50, 50 with no depth
+						d3dspt->Draw(sprite_enemy_U, &part2, &center2, &position2, D3DCOLOR_ARGB(255, 255, 255, 255));
+					}
+
+					for (int i = 0; i < ENEMY_NUM2; i ++)
+					{
+
+						D3DXVECTOR3 position3(enemy_Down_S1[i].x_pos, enemy_Down_S1[i].y_pos, 0.0f);    // position at 50, 50 with no depth
+						d3dspt->Draw(sprite_enemy_D, &part3, &center3, &position3, D3DCOLOR_ARGB(255, 255, 255, 255));
+					}
 				}
-
 
 			}
 
 			else
 			{
-				for (int i = 0; i < ENEMY_NUM2; i += 2)
+				if (n_Stage2 == 1)
 				{
 
-					D3DXVECTOR3 position2(enemy[i].x_pos, enemy[i].y_pos, 0.0f);    // position at 50, 50 with no depth
-					d3dspt->Draw(sprite_enemy_U, &part2, &center2, &position2, D3DCOLOR_ARGB(255, 255, 255, 255));
+					for (int i = 0; i < ENEMY_NUM2; i += 2)
+					{
+
+						D3DXVECTOR3 position2(enemy[i].x_pos, enemy[i].y_pos, 0.0f);    // position at 50, 50 with no depth
+						d3dspt->Draw(sprite_enemy_U, &part2, &center2, &position2, D3DCOLOR_ARGB(255, 255, 255, 255));
+					}
+
+
+					for (int i = 0; i < ENEMY_NUM2; i+=2)
+					{
+
+						D3DXVECTOR3 position3(enemy_Down_S1[i].x_pos, enemy_Down_S1[i].y_pos, 0.0f);    // position at 50, 50 with no depth
+						d3dspt->Draw(sprite_enemy_D, &part3, &center3, &position3, D3DCOLOR_ARGB(255, 255, 255, 255));
+					}
+				}
+
+				if (n_Stage2 == 3)
+				{
+					for (int i = 0; i < ENEMY_NUM2; i += 2)
+					{
+
+						D3DXVECTOR3 position2(enemy[i].x_pos, enemy[i].y_pos, 0.0f);    // position at 50, 50 with no depth
+						d3dspt->Draw(sprite_enemy_U, &part2, &center2, &position2, D3DCOLOR_ARGB(255, 255, 255, 255));
+					}
+
+
+					for (int i = 0; i < ENEMY_NUM2; i ++)
+					{
+
+						D3DXVECTOR3 position3(enemy_Down_S1[i].x_pos, enemy_Down_S1[i].y_pos, 0.0f);    // position at 50, 50 with no depth
+						d3dspt->Draw(sprite_enemy_D, &part3, &center3, &position3, D3DCOLOR_ARGB(255, 255, 255, 255));
+					}
 				}
 
 
-				for (int i = 0; i < ENEMY_NUM2; i++)
-				{
-
-					D3DXVECTOR3 position3(enemy_Down_S1[i].x_pos, enemy_Down_S1[i].y_pos, 0.0f);    // position at 50, 50 with no depth
-					d3dspt->Draw(sprite_enemy_D, &part3, &center3, &position3, D3DCOLOR_ARGB(255, 255, 255, 255));
-				}
 			}
 
-
-
-
 		break;
+
+	}
+
+	case SCORE:
+	{
+		
+		init_game();
+
+		static RECT textbox;
+		SetRect(&textbox, 0, 0, 820, 120); // create a RECT to contain the text
+										   // draw the Hello World text
+		dxfont->DrawTextA(NULL,
+			ScoreMessage,
+			-1,
+			&textbox,
+			DT_CENTER | DT_VCENTER,
+			D3DCOLOR_ARGB(255, 0, 0, 0));
+
+		if (KEY_DOWN(VK_SPACE))
+		{
+			g_GameState = INIT;
+			
+		}
+		break;
+
 	}
 
 
-
 	}
 	
-
-										
-	
-	
-
-
-
 
 
 	d3dspt->End();    // end sprite drawing
