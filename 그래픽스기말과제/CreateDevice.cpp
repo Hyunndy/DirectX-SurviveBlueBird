@@ -10,10 +10,12 @@
 #include <fmod.h> //사운드
 
 // define the screen resolution and keyboard macros
-#define SCREEN_WIDTH  800//800
-#define SCREEN_HEIGHT 640 //640
+#define SCREEN_WIDTH  800
+#define SCREEN_HEIGHT 640 
 #define KEY_DOWN(vk_code) ((GetAsyncKeyState(vk_code) & 0x8000) ? 1 : 0)
 #define KEY_UP(vk_code) ((GetAsyncKeyState(vk_code) & 0x8000) ? 0 : 1)
+
+
 
 #define ENEMY_NUM 8
 #define ENEMY_NUM2 10
@@ -36,15 +38,19 @@ LPD3DXFONT dxfont; // 폰트 오브젝트의 포인터
 //-----------------------------------------------
 // 타이머
 //-----------------------------------------------
-int Time=0;
-char g_strMessage[200]; // 게임 상태를 저장하는 문자열
-char ScoreMessage[200];
-int TimeScore;
-clock_t CurTime;
-int sibal;
-			int OldTime;
-		clock_t ssibal;
-					// sprite declarations
+
+char SecondMessage[200]; // 버틴 시간 : n초 저장하는 문자열
+char ScoreMessage[200]; // 게임 종료 시 스코어를 나타내는 문자열
+int Time; // 시간 저장 변수
+int TimeScore; // 스코어 저장 변수
+clock_t CurTime; // 게임 시작 부터 흘러 간 시간
+clock_t OldTime; // 게임 종료 부터 흘러 간 시간
+
+		
+ //-----------------------------------------------
+ // 스프라이트
+ //-----------------------------------------------					
+				 // sprite declarations
 LPDIRECT3DTEXTURE9 sprite;    // the pointer to the sprite
 LPDIRECT3DTEXTURE9 sprite_Start;    // the pointer to the sprite
 LPDIRECT3DTEXTURE9 sprite_hero;    // the pointer to the sprite
@@ -53,7 +59,7 @@ LPDIRECT3DTEXTURE9 sprite_enemy_R;    // the pointer to the sprite
 LPDIRECT3DTEXTURE9 sprite_enemy_L;    // the pointer to the sprite
 LPDIRECT3DTEXTURE9 sprite_enemy_U;    // the pointer to the sprite
 LPDIRECT3DTEXTURE9 sprite_enemy_D;    // the pointer to the sprite
-LPDIRECT3DTEXTURE9 sprite_bullet;    // the pointer to the sprite
+LPDIRECT3DTEXTURE9 sprite_heart;    // the pointer to the sprite
 
 //----------------------------------------------------
 // FMOD 사운드 시스템 생성과 초기화
@@ -83,25 +89,27 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 using namespace std;
 
 
+//-----------------------------------------------
+// 캐릭터 이동 관련
+//-----------------------------------------------
 enum { MOVE_UP, MOVE_DOWN, MOVE_LEFT, MOVE_RIGHT };
-bool Move_L;
+bool Move_L; // 왼쪽, 오른쪽 움직일 때 이미지 바꿔주기 위해
 
 
 
 //----------------------------------------------------
 // 스테이지
 //----------------------------------------------------
-enum Game_State { INIT, READY, RUNNING, SCORE };
-Game_State g_GameState = INIT;
-int g_nStage;
-bool Stage_Difficult; // 화살갯수 다르게 나오게 하는거
-bool Stage_Difficult2;
+enum Game_State { INIT, RUNNING, SCORE };
+Game_State GameState=INIT;
 
-bool S;
-bool S2;
-
+/*총 4개의 레벨디자인을 위해*/
 int n_Stage;
 int n_Stage2;
+
+/* 화살이 리셋될 때 마다 n_Stage를 바꿔주기 위해 bool 변수를 하나 더 만들어줘야 했음*/
+bool S; 
+bool S2;
 
 
 //기본 클래스 
@@ -157,7 +165,7 @@ bool Hero::check_collision(float x, float y)
 	//	Heart3 = false;
 	//
 	//if (Heart1 == false && Heart2 == false && Heart3 == false)
-	//	g_GameState = SCORE;
+	//	GameState = SCORE;
 	//
 		return true;
 
@@ -218,7 +226,7 @@ void Hero::move(int i)
 }
 
 
-// 적 클래스 
+// 화살 클래스 
 class Enemy :public entity {
 
 public:
@@ -276,116 +284,7 @@ Enemy enemy_Left_S1[ENEMY_NUM];
 
 
 // this is the main message handler for the program
-LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
-{
-	switch (message)
-	{
-	case WM_DESTROY:
-	{
-		PostQuitMessage(0);
-		return 0;
-	} break;
-	}
 
-	return DefWindowProc(hWnd, message, wParam, lParam);
-}
-
-
-// the entry point for any Windows program
-int WINAPI WinMain(HINSTANCE hInstance,
-	HINSTANCE hPrevInstance,
-	LPSTR lpCmdLine,
-	int nCmdShow)
-{
-	HWND hWnd;
-	WNDCLASSEX wc;
-
-	ZeroMemory(&wc, sizeof(WNDCLASSEX));
-
-	wc.cbSize = sizeof(WNDCLASSEX);
-	wc.style = CS_HREDRAW | CS_VREDRAW;
-	wc.lpfnWndProc = (WNDPROC)WindowProc;
-	wc.hInstance = hInstance;
-	wc.hCursor = LoadCursor(NULL, IDC_ARROW);
-	wc.lpszClassName = L"WindowClass";
-
-	RegisterClassEx(&wc);
-	//400,100
-	hWnd = CreateWindowEx(NULL, L"WindowClass", L"Our Direct3D Program",
-		WS_OVERLAPPEDWINDOW, 400, 100, SCREEN_WIDTH, SCREEN_HEIGHT,
-		NULL, NULL, hInstance, NULL);
-
-	ShowWindow(hWnd, nCmdShow);
-
-	// set up and initialize Direct3D
-	initD3D(hWnd);
-
-
-	//게임 오브젝트 초기화 
-	init_game();
-
-	// enter the main loop:
-
-	MSG msg;
-
-	while (TRUE)
-	{
-
-		DWORD starting_point = GetTickCount();
-
-		if (g_GameState == SCORE)
-		{
-			ssibal = clock();
-			OldTime = ssibal / 1000;
-		}
-
-		if (g_GameState == RUNNING)
-		{
-			CurTime = clock();
-			Time = CurTime / 1000  - OldTime;
-		}
-
-
-		FMOD_System_Update(g_System);
-		if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
-		{
-			if (msg.message == WM_QUIT)
-				break;
-
-			TranslateMessage(&msg);
-			DispatchMessage(&msg);
-		}
-
-
-		do_game_logic();
-
-		render_frame();
-
-
-		if (S == true)
-			Stage_Change();
-
-		if (S2 == true)
-			Stage_Change2();
-
-
-
-
-		// check the 'escape' key
-		if (KEY_DOWN(VK_ESCAPE))
-			PostMessage(hWnd, WM_DESTROY, 0, 0);
-
-
-
-
-		while ((GetTickCount() - starting_point) < 25);
-	}
-
-	// clean up DirectX and COM
-	cleanD3D();
-
-	return msg.wParam;
-}
 
 // this function initializes and prepares Direct3D for use
 void initD3D(HWND hWnd)
@@ -537,6 +436,22 @@ void initD3D(HWND hWnd)
 		&sprite_enemy_D);    // load to sprite
 
 
+	D3DXCreateTextureFromFileEx(d3ddev,    // the device pointer
+		L"Heart.png",    // the file name
+		D3DX_DEFAULT,    // default width
+		D3DX_DEFAULT,    // default height
+		D3DX_DEFAULT,    // no mip mapping
+		NULL,    // regular usage
+		D3DFMT_A8R8G8B8,    // 32-bit pixels with alpha
+		D3DPOOL_MANAGED,    // typical memory handling
+		D3DX_DEFAULT,    // no filtering
+		D3DX_DEFAULT,    // no mip filtering
+		D3DCOLOR_XRGB(255, 0, 255),    // the hot-pink color key
+		NULL,    // no image info struct
+		NULL,    // not using 256 colors
+		&sprite_heart);    // load to sprite
+
+
 
 	D3DXCreateFont(d3ddev, // d3d디바이스
 		40, // 폰트 높이
@@ -564,31 +479,6 @@ void initD3D(HWND hWnd)
 	return;
 }
 
-void Stage_Change()
-{
-	n_Stage++;
-	if (n_Stage == 5)
-		n_Stage = 1;
-
-	if (Stage_Difficult == false )
-		Stage_Difficult = true;
-	else
-		Stage_Difficult = false;
-
-	
-}
-
-void Stage_Change2()
-{
-	n_Stage2++;
-	if (n_Stage2 == 5)
-		n_Stage2 = 1;
-
-	if (Stage_Difficult2 == false)
-		Stage_Difficult2 = true;
-	else
-		Stage_Difficult2 = false;
-}
 
 void init_game(void)
 {
@@ -623,9 +513,7 @@ void init_game(void)
 	}
 
 
-	// 스테이지 난이도 초기화
-	Stage_Difficult = false;
-	Stage_Difficult2 = false;
+
 
 	S = false;
 	S2 = false;
@@ -640,15 +528,36 @@ void init_game(void)
 
 }
 
+//----------------------------------------------------------------
+// Stage_Change()
+// 총 4개의 레벨디자인을 위해 render_frame에서 렌더링을 구분해 주기 위해 n_Stage가 필요했음.
+//----------------------------------------------------------------
+
+
+/* 왼 오 화살의 레벨관리 */
+void Stage_Change()
+{
+	n_Stage++;
+	if (n_Stage == 5)
+		n_Stage = 1;
+}
+/* 위 아래 화살의 레벨관리 */
+void Stage_Change2()
+{
+	n_Stage2++;
+	if (n_Stage2 == 5)
+		n_Stage2 = 1;
+}
+
 
 void do_game_logic(void)
 {
 	
 	
 	
-	if (g_GameState == RUNNING)
+	if (GameState == RUNNING)
 	{
-		sprintf_s(g_strMessage, sizeof(g_strMessage), "버틴 시간 : %d 초", Time);
+		sprintf_s(SecondMessage, sizeof(SecondMessage), "버틴 시간 : %d 초", Time);
 		
 		//주인공 처리 
 		if (KEY_DOWN(VK_UP))
@@ -739,7 +648,7 @@ void do_game_logic(void)
 				if (hero.N_Death == 4 && hero.Heart1 == false && hero.Heart2 == false && hero.Heart3 == false)
 				{
 					hero.N_Death = 0;
-					g_GameState = SCORE;
+					GameState = SCORE;
 					
 				}
 			}
@@ -747,9 +656,9 @@ void do_game_logic(void)
 
 	}
 			
-	if (g_GameState == SCORE)
+	if (GameState == SCORE)
 	{
-		sprintf_s(ScoreMessage, sizeof(ScoreMessage), "버틴 시간 : %d 초", TimeScore);
+		sprintf_s(ScoreMessage, sizeof(ScoreMessage), "\nGame Over!!\n버틴 시간 : %d 초", TimeScore);
 	}
 
 }
@@ -758,7 +667,7 @@ void do_game_logic(void)
 void render_frame(void)
 {
 	// clear the window to a deep blue
-	d3ddev->Clear(0, NULL, D3DCLEAR_TARGET, D3DCOLOR_XRGB(255, 0, 0), 1.0f, 0);
+	d3ddev->Clear(0, NULL, D3DCLEAR_TARGET, D3DCOLOR_XRGB(207, 192,54), 1.0f, 0);
 
 	d3ddev->BeginScene();    // begins the 3D scene
 
@@ -772,7 +681,7 @@ void render_frame(void)
 	int xpos = frame * 64;
 
 
-	switch (g_GameState)
+	switch (GameState)
 	{
 
 	case INIT:
@@ -783,7 +692,7 @@ void render_frame(void)
 		D3DXVECTOR3 center(0.0f, 0.0f, 0.0f);    // center at the upper-left corner
 		D3DXVECTOR3 position(0, 0, 0.0f);    // position at 50, 50 with no depth
 		d3dspt->Draw(sprite_Start, &Back_Start, &center, &position, D3DCOLOR_ARGB(255, 255, 255, 255));
-		if (KEY_DOWN(VK_SPACE)) g_GameState = RUNNING;
+		if (KEY_DOWN(VK_SPACE)) GameState = RUNNING;
 		break;
 	}
 	case RUNNING:
@@ -801,7 +710,7 @@ void render_frame(void)
 		SetRect(&textbox, 0, 0, 820, 120); // create a RECT to contain the text
 			// draw the Hello World text
 		dxfont->DrawTextA(NULL,
-			g_strMessage,
+			SecondMessage,
 			-1,
 			&textbox,
 			DT_CENTER | DT_VCENTER,
@@ -827,6 +736,16 @@ void render_frame(void)
 			d3dspt->Draw(sprite_hero2, &part, &center, &position, D3DCOLOR_ARGB(255, 255, 255, 255));
 		}
 
+		//하트
+		RECT Heart;
+		SetRect(&Heart, 0, 0, 64, 64);
+		D3DXVECTOR3 center_h(0.0f, 0.0f, 0.0f);    // center at the upper-left corner
+		for (int i = 0; i < 3; i++)
+		{
+			D3DXVECTOR3 position_h(10+74*i, 10, 0.0f);    // position at 50, 50 with no depth
+			d3dspt->Draw(sprite_heart, &Heart, &center_h, &position_h, D3DCOLOR_ARGB(255, 255, 255, 255));
+
+		}
 
 
 
@@ -852,8 +771,6 @@ void render_frame(void)
 
 
 
-			if (Stage_Difficult == true)
-			{
 				if (n_Stage == 2)
 				{
 					for (int i = 0; i < ENEMY_NUM; i++)
@@ -887,10 +804,7 @@ void render_frame(void)
 
 				}
 
-			}
-
-			else
-			{			
+			
 				
 				if (n_Stage == 1)
 				{
@@ -928,10 +842,7 @@ void render_frame(void)
 					}
 				}
 
-			}
-
-			if (Stage_Difficult2 == true)
-			{
+	
 				if (n_Stage2 == 2)
 				{
 
@@ -967,10 +878,7 @@ void render_frame(void)
 					}
 				}
 
-			}
-
-			else
-			{
+		
 				if (n_Stage2 == 1)
 				{
 
@@ -1009,7 +917,7 @@ void render_frame(void)
 				}
 
 
-			}
+		
 
 		break;
 
@@ -1020,19 +928,20 @@ void render_frame(void)
 		
 		init_game();
 
-		static RECT textbox;
-		SetRect(&textbox, 0, 0, 820, 120); // create a RECT to contain the text
+		static RECT textbox2;
+		SetRect(&textbox2, 0, 160, 790, 330); // create a RECT to contain the text
 										   // draw the Hello World text
+		D3DXVECTOR3 position_S(200, 200, 0.0f);
 		dxfont->DrawTextA(NULL,
 			ScoreMessage,
 			-1,
-			&textbox,
+			&textbox2,
 			DT_CENTER | DT_VCENTER,
 			D3DCOLOR_ARGB(255, 0, 0, 0));
 
 		if (KEY_DOWN(VK_SPACE))
 		{
-			g_GameState = INIT;
+			GameState = INIT;
 			
 		}
 		break;
@@ -1052,6 +961,131 @@ void render_frame(void)
 
 	return;
 }
+
+
+//----------------------------------------------------------------
+// 메인루프
+//----------------------------------------------------------------
+
+LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+{
+	switch (message)
+	{
+	case WM_DESTROY:
+	{
+		PostQuitMessage(0);
+		return 0;
+	} break;
+	}
+
+	return DefWindowProc(hWnd, message, wParam, lParam);
+}
+
+// the entry point for any Windows program
+int WINAPI WinMain(HINSTANCE hInstance,
+	HINSTANCE hPrevInstance,
+	LPSTR lpCmdLine,
+	int nCmdShow)
+{
+	HWND hWnd;
+	WNDCLASSEX wc;
+
+	ZeroMemory(&wc, sizeof(WNDCLASSEX));
+
+	wc.cbSize = sizeof(WNDCLASSEX);
+	wc.style = CS_HREDRAW | CS_VREDRAW;
+	wc.lpfnWndProc = (WNDPROC)WindowProc;
+	wc.hInstance = hInstance;
+	wc.hCursor = LoadCursor(NULL, IDC_ARROW);
+	wc.lpszClassName = L"WindowClass";
+
+	RegisterClassEx(&wc);
+	//400,100
+	hWnd = CreateWindowEx(NULL, L"WindowClass", L"HJ'S DIRECTX GAME",
+		WS_OVERLAPPEDWINDOW, 400, 100, SCREEN_WIDTH, SCREEN_HEIGHT,
+		NULL, NULL, hInstance, NULL);
+
+	ShowWindow(hWnd, nCmdShow);
+
+	// set up and initialize Direct3D
+	initD3D(hWnd);
+
+
+	//게임 오브젝트 초기화 
+	init_game();
+
+	// enter the main loop:
+
+	MSG msg;
+
+	while (TRUE)
+	{
+
+		DWORD starting_point = GetTickCount();
+
+
+		/* 
+		게임이 끝나고 다시 Replay했을 때 버틴 시간을 0초로 초기화 해주기 위해
+		Curtime은 Running 스테이지 처음 시작했을 때 부터 clock가동,
+		Oldtime은 처음 게임이 끝난 Score 스테이지 시작했을 때 부터 clock가동해서
+		Time은 Curtime-Oldtime으로 해주면 리플레이 했을 때 0초가 된다. 
+		*/
+		if (GameState == SCORE)
+		{
+			OldTime = clock();
+		}
+
+		if (GameState == RUNNING)
+		{
+			CurTime = clock();
+			Time = CurTime / 1000  - OldTime / 1000;
+		}
+
+		/* 사운드 계속 재생되게 */
+		FMOD_System_Update(g_System);
+
+
+		if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
+		{
+			if (msg.message == WM_QUIT)
+				break;
+
+			TranslateMessage(&msg);
+			DispatchMessage(&msg);
+		}
+
+
+		do_game_logic();
+
+		render_frame();
+
+
+		/*
+		화살들이 범위를 초과해서 다시 초기화 될 때 마다 나오는 갯수를 바꿔주기 위해.
+		*/
+		if (S == true)
+			Stage_Change();
+
+		if (S2 == true)
+			Stage_Change2();
+
+
+
+
+		// check the 'escape' key
+		if (KEY_DOWN(VK_ESCAPE))
+			PostMessage(hWnd, WM_DESTROY, 0, 0);
+
+
+		while ((GetTickCount() - starting_point) < 25);
+	}
+
+	// clean up DirectX and COM
+	cleanD3D();
+
+	return msg.wParam;
+}
+
 
 
 // this is the function that cleans up Direct3D and COM
@@ -1076,7 +1110,8 @@ void cleanD3D(void)
 	sprite_enemy_L->Release();
 	sprite_enemy_U->Release();
 	sprite_enemy_D->Release();
-
+	sprite_heart->Release();
+	
 
 	
 
