@@ -46,7 +46,7 @@ int TimeScore; // 스코어 저장 변수
 clock_t CurTime; // 게임 시작 부터 흘러 간 시간
 clock_t OldTime; // 게임 종료 부터 흘러 간 시간
 
-		
+
  //-----------------------------------------------
  // 스프라이트
  //-----------------------------------------------					
@@ -72,16 +72,18 @@ FMOD_CHANNELGROUP *g_ChannelGroup;
 
 
 
-									 // function prototypes
+// function prototypes
 void initD3D(HWND hWnd);    // sets up and initializes Direct3D
 void render_frame(void);    // renders a single frame
 void cleanD3D(void);		// closes Direct3D and releases memory
 
 void init_game(void);
 void do_game_logic(void);
-bool sphere_collision_check(float x0, float y0, float size0, float x1, float y1, float size1);
+
 void Stage_Change();
 void Stage_Change2();
+
+void Collision();
 
 // the WindowProc function prototype
 LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
@@ -101,14 +103,14 @@ bool Move_L; // 왼쪽, 오른쪽 움직일 때 이미지 바꿔주기 위해
 // 스테이지
 //----------------------------------------------------
 enum Game_State { INIT, RUNNING, SCORE };
-Game_State GameState=INIT;
+Game_State GameState = INIT;
 
 /*총 4개의 레벨디자인을 위해*/
 int n_Stage;
 int n_Stage2;
 
 /* 화살이 리셋될 때 마다 n_Stage를 바꿔주기 위해 bool 변수를 하나 더 만들어줘야 했음*/
-bool S; 
+bool S;
 bool S2;
 
 
@@ -146,6 +148,8 @@ public:
 	void init(float x, float y);
 	bool check_collision(float x, float y);
 
+
+
 	int N_Death;
 	bool Heart1;
 	bool Heart2;
@@ -157,37 +161,15 @@ bool Hero::check_collision(float x, float y)
 {
 	if (sphere_collision_check(x_pos, y_pos, 15, x, y, 15) == true)
 	{
-	//Heart1=false;
-	//
-	//if (Heart1 == false)
-	//	Heart2 = false;
-	//else if (Heart2 == false)		
-	//	Heart3 = false;
-	//
-	//if (Heart1 == false && Heart2 == false && Heart3 == false)
-	//	GameState = SCORE;
-	//
+
 		return true;
 
 	}
 	else
 		return false;
 }
-//bool Bullet::check_collision(float x, float y)
-//{
-//
-//	//충돌 처리 시 
-//	if (sphere_collision_check(x_pos, y_pos, 32, x, y, 32) == true)
-//	{
-//		bShow = false;
-//		return true;
-//
-//	}
-//	else {
-//
-//		return false;
-//	}
-//}
+
+
 
 void Hero::init(float x, float y)
 {
@@ -249,25 +231,25 @@ void Enemy::init(float x, float y)
 
 void Enemy::move()
 {
-	y_pos += 3.5;
+	y_pos += 6.5;
 
 }
 
 
 void Enemy::move_up()
 {
-	y_pos -= 3.5;
+	y_pos -= 6.5;
 }
 
 void Enemy::move_right()
 {
-	x_pos += 4.5;
+	x_pos += 8.5;
 }
 
 void Enemy::move_left()
 {
-	
-	x_pos -= 4.5;
+
+	x_pos -= 8.5;
 }
 
 
@@ -460,7 +442,7 @@ void initD3D(HWND hWnd)
 		D3DX_DEFAULT, // MipLevel
 		TRUE, // italic font
 		DEFAULT_CHARSET, // default character set
-		OUT_DEFAULT_PRECIS, 
+		OUT_DEFAULT_PRECIS,
 		DEFAULT_QUALITY,
 		DEFAULT_PITCH | FF_DONTCARE,
 		L"Arial",
@@ -473,7 +455,7 @@ void initD3D(HWND hWnd)
 	FMOD_System_Create(&g_System);
 	FMOD_System_Init(g_System, 32, FMOD_INIT_NORMAL, NULL);
 	FMOD_System_CreateSound(g_System, "Sound.mp3", FMOD_DEFAULT, 0, &Sound);
-	
+
 
 
 	return;
@@ -482,26 +464,26 @@ void initD3D(HWND hWnd)
 
 void init_game(void)
 {
-	
-	
+
+
 	TimeScore = Time;
-	
+
 	//객체 초기화 
-	hero.init(150, 300);
+	hero.init(375, 360);
 	hero.Heart1 = true;
 	hero.Heart2 = true;
 	hero.Heart3 = true;
 	hero.N_Death = 0;
 
 	// 사운드
-	
+
 	FMOD_System_PlaySound(g_System, Sound, g_ChannelGroup, 0, &Channel);
 
 	//적들 초기화 
-	for (int i = 0; i<ENEMY_NUM; i++)
+	for (int i = 0; i < ENEMY_NUM; i++)
 	{
 
-		enemy_Right_S1[i].init(-64, (float)( 80 * i));
+		enemy_Right_S1[i].init(-64, (float)(80 * i));
 		enemy_Left_S1[i].init(800, (float)(80 * i));
 	}
 
@@ -549,16 +531,32 @@ void Stage_Change2()
 		n_Stage2 = 1;
 }
 
+void Collision()
+{
+	hero.init(375, 360);
+	hero.N_Death++;
+
+	if (hero.N_Death == 1)
+		hero.Heart1 = false;
+	if (hero.N_Death == 2)
+		hero.Heart2 = false;
+	if (hero.N_Death == 3)
+	{
+		hero.Heart3 = false;
+		hero.N_Death = 0;
+		GameState = SCORE;
+	}
+}
 
 void do_game_logic(void)
 {
-	
-	
-	
+
+
+
 	if (GameState == RUNNING)
 	{
 		sprintf_s(SecondMessage, sizeof(SecondMessage), "버틴 시간 : %d 초", Time);
-		
+
 		//주인공 처리 
 		if (KEY_DOWN(VK_UP))
 			hero.move(MOVE_UP);
@@ -573,7 +571,7 @@ void do_game_logic(void)
 			hero.move(MOVE_RIGHT);
 
 
-		//적들 처리 
+		//화살 처리
 		for (int i = 0; i < ENEMY_NUM2; i++)
 		{
 			if (enemy[i].y_pos > 640)
@@ -588,7 +586,6 @@ void do_game_logic(void)
 				enemy[i].move();
 
 			}
-
 
 			if (enemy_Down_S1[i].y_pos < -64)
 			{
@@ -628,34 +625,108 @@ void do_game_logic(void)
 
 
 
-
-
 		//충돌 처리 
+
+		//----------------------------------------------------------------------------
+		// 좌,우 화살 충돌처리
+		//----------------------------------------------------------------------------
+
+		for (int i = 0; i < ENEMY_NUM; i += 2)
+		{
+			if (n_Stage == 1)
+			{
+				if (hero.check_collision(enemy_Left_S1[i].x_pos, enemy_Left_S1[i].y_pos) == true ||
+					hero.check_collision(enemy_Right_S1[i].x_pos, enemy_Right_S1[i].y_pos) == true)
+					Collision();
+			}
+
+			if (n_Stage == 2)
+			{
+				if (hero.check_collision(enemy_Left_S1[i].x_pos, enemy_Left_S1[i].y_pos) == true)
+					Collision();
+			}
+
+			if (n_Stage == 3)
+			{
+
+				if (hero.check_collision(enemy_Right_S1[i].x_pos, enemy_Right_S1[i].y_pos) == true)	
+					Collision();
+			}
+
+		}
+
 		for (int i = 0; i < ENEMY_NUM; i++)
 		{
-			if (hero.check_collision(enemy[i].x_pos, enemy[i].y_pos) == true)
+			if (n_Stage == 2)
 			{
-				hero.init(150, 300);
-				hero.N_Death++;
+				if (hero.check_collision(enemy_Right_S1[i].x_pos, enemy_Right_S1[i].y_pos) == true)
+					Collision();
+			}
 
-				if (hero.N_Death == 1)
-					hero.Heart1 = false;
-				if (hero.N_Death == 2)
-					hero.Heart2 = false;
-				if (hero.N_Death == 3)
-					hero.Heart3 = false;
+			if (n_Stage == 3)
+			{
+				if (hero.check_collision(enemy_Left_S1[i].x_pos, enemy_Left_S1[i].y_pos) == true)
+					Collision();
+			}
 
-				if (hero.N_Death == 4 && hero.Heart1 == false && hero.Heart2 == false && hero.Heart3 == false)
-				{
-					hero.N_Death = 0;
-					GameState = SCORE;
-					
-				}
+			if (n_Stage == 4)
+			{
+				if (hero.check_collision(enemy_Left_S1[i].x_pos, enemy_Left_S1[i].y_pos) == true ||
+					hero.check_collision(enemy_Right_S1[i].x_pos, enemy_Right_S1[i].y_pos) == true)
+					Collision();
+			}
+		}
+
+		//----------------------------------------------------------------------------
+		// 위, 아래 화살 충돌처리
+		//----------------------------------------------------------------------------
+
+		for (int i = 0; i < ENEMY_NUM2; i += 2)
+		{
+			if (n_Stage2 == 1)
+			{
+				if (hero.check_collision(enemy[i].x_pos, enemy[i].y_pos) == true ||
+					hero.check_collision(enemy_Down_S1[i].x_pos, enemy_Down_S1[i].y_pos) == true)
+					Collision();
+			}
+
+			if (n_Stage2 == 2)
+			{
+				if (hero.check_collision(enemy_Down_S1[i].x_pos, enemy_Down_S1[i].y_pos) == true)
+					Collision();
+			}
+
+			if (n_Stage2 == 3)
+			{
+				if (hero.check_collision(enemy[i].x_pos, enemy[i].y_pos) == true)
+					Collision();
+			}
+		}
+
+		for (int i = 0; i < ENEMY_NUM2; i++)
+		{
+			if (n_Stage2 == 2)
+			{
+				if (hero.check_collision(enemy[i].x_pos, enemy[i].y_pos) == true)
+					Collision();
+			}
+
+			if (n_Stage2 == 3)
+			{
+				if (hero.check_collision(enemy_Down_S1[i].x_pos, enemy_Down_S1[i].y_pos) == true)
+					Collision();
+			}
+
+			if (n_Stage2 == 4)
+			{
+				if (hero.check_collision(enemy_Down_S1[i].x_pos, enemy_Down_S1[i].y_pos) == true ||
+					hero.check_collision(enemy[i].x_pos, enemy[i].y_pos) == true)
+					Collision();
 			}
 		}
 
 	}
-			
+
 	if (GameState == SCORE)
 	{
 		sprintf_s(ScoreMessage, sizeof(ScoreMessage), "\nGame Over!!\n버틴 시간 : %d 초", TimeScore);
@@ -667,17 +738,17 @@ void do_game_logic(void)
 void render_frame(void)
 {
 	// clear the window to a deep blue
-	d3ddev->Clear(0, NULL, D3DCLEAR_TARGET, D3DCOLOR_XRGB(207, 192,54), 1.0f, 0);
+	d3ddev->Clear(0, NULL, D3DCLEAR_TARGET, D3DCOLOR_XRGB(207, 192, 54), 1.0f, 0);
 
 	d3ddev->BeginScene();    // begins the 3D scene
 
 	d3dspt->Begin(D3DXSPRITE_ALPHABLEND);    // // begin sprite drawing with transparency             
-	
+
 	//주인공 애니메이션 프레임
 	static int frame = 0;
-	if (KEY_DOWN(VK_LEFT)||(KEY_DOWN(VK_RIGHT))) frame += 1;
+	if (KEY_DOWN(VK_LEFT) || (KEY_DOWN(VK_RIGHT))) frame += 1;
 	if (frame == 4) frame = 0;
-	
+
 	int xpos = frame * 64;
 
 
@@ -692,7 +763,10 @@ void render_frame(void)
 		D3DXVECTOR3 center(0.0f, 0.0f, 0.0f);    // center at the upper-left corner
 		D3DXVECTOR3 position(0, 0, 0.0f);    // position at 50, 50 with no depth
 		d3dspt->Draw(sprite_Start, &Back_Start, &center, &position, D3DCOLOR_ARGB(255, 255, 255, 255));
-		if (KEY_DOWN(VK_SPACE)) GameState = RUNNING;
+		if (KEY_DOWN(VK_SHIFT))
+		{
+			GameState = RUNNING;
+		}
 		break;
 	}
 	case RUNNING:
@@ -737,15 +811,33 @@ void render_frame(void)
 		}
 
 		//하트
+
 		RECT Heart;
 		SetRect(&Heart, 0, 0, 64, 64);
 		D3DXVECTOR3 center_h(0.0f, 0.0f, 0.0f);    // center at the upper-left corner
-		for (int i = 0; i < 3; i++)
-		{
-			D3DXVECTOR3 position_h(10+74*i, 10, 0.0f);    // position at 50, 50 with no depth
-			d3dspt->Draw(sprite_heart, &Heart, &center_h, &position_h, D3DCOLOR_ARGB(255, 255, 255, 255));
 
+
+		if (hero.Heart1 == true)
+		{
+			D3DXVECTOR3 position_h(10 + 74 * 2, 10, 0.0f);    // position at 50, 50 with no depth
+			d3dspt->Draw(sprite_heart, &Heart, &center_h, &position_h, D3DCOLOR_ARGB(255, 255, 255, 255));
 		}
+
+		if (hero.Heart2 == true)
+		{
+			D3DXVECTOR3 position_h(10 + 74, 10, 0.0f);    // position at 50, 50 with no depth
+			d3dspt->Draw(sprite_heart, &Heart, &center_h, &position_h, D3DCOLOR_ARGB(255, 255, 255, 255));
+		}
+
+		if (hero.Heart3 == true)
+		{
+			D3DXVECTOR3 position_h(10, 10, 0.0f);    // position at 50, 50 with no depth
+			d3dspt->Draw(sprite_heart, &Heart, &center_h, &position_h, D3DCOLOR_ARGB(255, 255, 255, 255));
+		}
+
+
+
+
 
 
 
@@ -769,155 +861,165 @@ void render_frame(void)
 		SetRect(&part5, 0, 0, 64, 35);
 		D3DXVECTOR3 center5(0.0f, 0.0f, 0.0f);    // center at the upper-left corner
 
+		//--------------------------------------------------------------------------
+		// 스테이지 1
+		//--------------------------------------------------------------------------
+
+		if (n_Stage == 1)
+		{
+			for (int i = 0; i < ENEMY_NUM; i += 2)
+			{
+
+				D3DXVECTOR3 position4(enemy_Right_S1[i].x_pos, enemy_Right_S1[i].y_pos, 0.0f);    // position at 50, 50 with no depth
+				d3dspt->Draw(sprite_enemy_R, &part4, &center4, &position4, D3DCOLOR_ARGB(255, 255, 255, 255));
+			}
 
 
-				if (n_Stage == 2)
-				{
-					for (int i = 0; i < ENEMY_NUM; i++)
-					{
+			for (int i = 0; i < ENEMY_NUM; i += 2)
+			{
 
-						D3DXVECTOR3 position4(enemy_Right_S1[i].x_pos, enemy_Right_S1[i].y_pos, 0.0f);    // position at 50, 50 with no depth
-						d3dspt->Draw(sprite_enemy_R, &part4, &center4, &position4, D3DCOLOR_ARGB(255, 255, 255, 255));
-					}
-					for (int i = 0; i < ENEMY_NUM; i += 2)
-					{
+				D3DXVECTOR3 position5(enemy_Left_S1[i].x_pos, enemy_Left_S1[i].y_pos, 0.0f);    // position at 50, 50 with no depth
+				d3dspt->Draw(sprite_enemy_L, &part5, &center5, &position5, D3DCOLOR_ARGB(255, 255, 255, 255));
+			}
+		}
 
-						D3DXVECTOR3 position5(enemy_Left_S1[i].x_pos, enemy_Left_S1[i].y_pos, 0.0f);    // position at 50, 50 with no depth
-						d3dspt->Draw(sprite_enemy_L, &part5, &center5, &position5, D3DCOLOR_ARGB(255, 255, 255, 255));
-					}
-				}
+		if (n_Stage2 == 1)
+		{
 
-				if (n_Stage == 4)
-				{
-					for (int i = 0; i < ENEMY_NUM; i++)
-					{
+			for (int i = 0; i < ENEMY_NUM2; i += 2)
+			{
 
-						D3DXVECTOR3 position4(enemy_Right_S1[i].x_pos, enemy_Right_S1[i].y_pos, 0.0f);    // position at 50, 50 with no depth
-						d3dspt->Draw(sprite_enemy_R, &part4, &center4, &position4, D3DCOLOR_ARGB(255, 255, 255, 255));
-					}
-					for (int i = 0; i < ENEMY_NUM; i ++)
-					{
-
-						D3DXVECTOR3 position5(enemy_Left_S1[i].x_pos, enemy_Left_S1[i].y_pos, 0.0f);    // position at 50, 50 with no depth
-						d3dspt->Draw(sprite_enemy_L, &part5, &center5, &position5, D3DCOLOR_ARGB(255, 255, 255, 255));
-					}
-
-				}
-
-			
-				
-				if (n_Stage == 1)
-				{
-					for (int i = 0; i < ENEMY_NUM; i += 2)
-					{
-
-						D3DXVECTOR3 position4(enemy_Right_S1[i].x_pos, enemy_Right_S1[i].y_pos, 0.0f);    // position at 50, 50 with no depth
-						d3dspt->Draw(sprite_enemy_R, &part4, &center4, &position4, D3DCOLOR_ARGB(255, 255, 255, 255));
-					}
+				D3DXVECTOR3 position2(enemy[i].x_pos, enemy[i].y_pos, 0.0f);    // position at 50, 50 with no depth
+				d3dspt->Draw(sprite_enemy_U, &part2, &center2, &position2, D3DCOLOR_ARGB(255, 255, 255, 255));
+			}
 
 
-					for (int i = 0; i < ENEMY_NUM; i+=2)
-					{
+			for (int i = 0; i < ENEMY_NUM2; i += 2)
+			{
 
-						D3DXVECTOR3 position5(enemy_Left_S1[i].x_pos, enemy_Left_S1[i].y_pos, 0.0f);    // position at 50, 50 with no depth
-						d3dspt->Draw(sprite_enemy_L, &part5, &center5, &position5, D3DCOLOR_ARGB(255, 255, 255, 255));
-					}
-				}
-
-				if (n_Stage == 3)
-				{
-					for (int i = 0; i < ENEMY_NUM; i +=2)
-					{
-
-						D3DXVECTOR3 position4(enemy_Right_S1[i].x_pos, enemy_Right_S1[i].y_pos, 0.0f);    // position at 50, 50 with no depth
-						d3dspt->Draw(sprite_enemy_R, &part4, &center4, &position4, D3DCOLOR_ARGB(255, 255, 255, 255));
-					}
+				D3DXVECTOR3 position3(enemy_Down_S1[i].x_pos, enemy_Down_S1[i].y_pos, 0.0f);    // position at 50, 50 with no depth
+				d3dspt->Draw(sprite_enemy_D, &part3, &center3, &position3, D3DCOLOR_ARGB(255, 255, 255, 255));
+			}
+		}
 
 
-					for (int i = 0; i < ENEMY_NUM; i++)
-					{
-
-						D3DXVECTOR3 position5(enemy_Left_S1[i].x_pos, enemy_Left_S1[i].y_pos, 0.0f);    // position at 50, 50 with no depth
-						d3dspt->Draw(sprite_enemy_L, &part5, &center5, &position5, D3DCOLOR_ARGB(255, 255, 255, 255));
-					}
-				}
-
-	
-				if (n_Stage2 == 2)
-				{
-
-					for (int i = 0; i < ENEMY_NUM2; i++)
-					{
-
-						D3DXVECTOR3 position2(enemy[i].x_pos, enemy[i].y_pos, 0.0f);    // position at 50, 50 with no depth
-						d3dspt->Draw(sprite_enemy_U, &part2, &center2, &position2, D3DCOLOR_ARGB(255, 255, 255, 255));
-					}
-
-					for (int i = 0; i < ENEMY_NUM2; i += 2)
-					{
-
-						D3DXVECTOR3 position3(enemy_Down_S1[i].x_pos, enemy_Down_S1[i].y_pos, 0.0f);    // position at 50, 50 with no depth
-						d3dspt->Draw(sprite_enemy_D, &part3, &center3, &position3, D3DCOLOR_ARGB(255, 255, 255, 255));
-					}
-				}
-
-				if (n_Stage2 == 4)
-				{
-					for (int i = 0; i < ENEMY_NUM2; i++)
-					{
-
-						D3DXVECTOR3 position2(enemy[i].x_pos, enemy[i].y_pos, 0.0f);    // position at 50, 50 with no depth
-						d3dspt->Draw(sprite_enemy_U, &part2, &center2, &position2, D3DCOLOR_ARGB(255, 255, 255, 255));
-					}
-
-					for (int i = 0; i < ENEMY_NUM2; i ++)
-					{
-
-						D3DXVECTOR3 position3(enemy_Down_S1[i].x_pos, enemy_Down_S1[i].y_pos, 0.0f);    // position at 50, 50 with no depth
-						d3dspt->Draw(sprite_enemy_D, &part3, &center3, &position3, D3DCOLOR_ARGB(255, 255, 255, 255));
-					}
-				}
-
-		
-				if (n_Stage2 == 1)
-				{
-
-					for (int i = 0; i < ENEMY_NUM2; i += 2)
-					{
-
-						D3DXVECTOR3 position2(enemy[i].x_pos, enemy[i].y_pos, 0.0f);    // position at 50, 50 with no depth
-						d3dspt->Draw(sprite_enemy_U, &part2, &center2, &position2, D3DCOLOR_ARGB(255, 255, 255, 255));
-					}
+		//--------------------------------------------------------------------------
+		// 스테이지 2
+		//--------------------------------------------------------------------------
 
 
-					for (int i = 0; i < ENEMY_NUM2; i+=2)
-					{
+		if (n_Stage == 2)
+		{
+			for (int i = 0; i < ENEMY_NUM; i++)
+			{
 
-						D3DXVECTOR3 position3(enemy_Down_S1[i].x_pos, enemy_Down_S1[i].y_pos, 0.0f);    // position at 50, 50 with no depth
-						d3dspt->Draw(sprite_enemy_D, &part3, &center3, &position3, D3DCOLOR_ARGB(255, 255, 255, 255));
-					}
-				}
+				D3DXVECTOR3 position4(enemy_Right_S1[i].x_pos, enemy_Right_S1[i].y_pos, 0.0f);    // position at 50, 50 with no depth
+				d3dspt->Draw(sprite_enemy_R, &part4, &center4, &position4, D3DCOLOR_ARGB(255, 255, 255, 255));
+			}
+			for (int i = 0; i < ENEMY_NUM; i += 2)
+			{
 
-				if (n_Stage2 == 3)
-				{
-					for (int i = 0; i < ENEMY_NUM2; i += 2)
-					{
-
-						D3DXVECTOR3 position2(enemy[i].x_pos, enemy[i].y_pos, 0.0f);    // position at 50, 50 with no depth
-						d3dspt->Draw(sprite_enemy_U, &part2, &center2, &position2, D3DCOLOR_ARGB(255, 255, 255, 255));
-					}
-
-
-					for (int i = 0; i < ENEMY_NUM2; i ++)
-					{
-
-						D3DXVECTOR3 position3(enemy_Down_S1[i].x_pos, enemy_Down_S1[i].y_pos, 0.0f);    // position at 50, 50 with no depth
-						d3dspt->Draw(sprite_enemy_D, &part3, &center3, &position3, D3DCOLOR_ARGB(255, 255, 255, 255));
-					}
-				}
+				D3DXVECTOR3 position5(enemy_Left_S1[i].x_pos, enemy_Left_S1[i].y_pos, 0.0f);    // position at 50, 50 with no depth
+				d3dspt->Draw(sprite_enemy_L, &part5, &center5, &position5, D3DCOLOR_ARGB(255, 255, 255, 255));
+			}
+		}
 
 
-		
+		if (n_Stage2 == 2)
+		{
+
+			for (int i = 0; i < ENEMY_NUM2; i++)
+			{
+
+				D3DXVECTOR3 position2(enemy[i].x_pos, enemy[i].y_pos, 0.0f);    // position at 50, 50 with no depth
+				d3dspt->Draw(sprite_enemy_U, &part2, &center2, &position2, D3DCOLOR_ARGB(255, 255, 255, 255));
+			}
+
+			for (int i = 0; i < ENEMY_NUM2; i += 2)
+			{
+
+				D3DXVECTOR3 position3(enemy_Down_S1[i].x_pos, enemy_Down_S1[i].y_pos, 0.0f);    // position at 50, 50 with no depth
+				d3dspt->Draw(sprite_enemy_D, &part3, &center3, &position3, D3DCOLOR_ARGB(255, 255, 255, 255));
+			}
+		}
+
+		//--------------------------------------------------------------------------
+		// 스테이지 3
+		//--------------------------------------------------------------------------
+
+		if (n_Stage == 3)
+		{
+			for (int i = 0; i < ENEMY_NUM; i += 2)
+			{
+
+				D3DXVECTOR3 position4(enemy_Right_S1[i].x_pos, enemy_Right_S1[i].y_pos, 0.0f);    // position at 50, 50 with no depth
+				d3dspt->Draw(sprite_enemy_R, &part4, &center4, &position4, D3DCOLOR_ARGB(255, 255, 255, 255));
+			}
+
+
+			for (int i = 0; i < ENEMY_NUM; i++)
+			{
+
+				D3DXVECTOR3 position5(enemy_Left_S1[i].x_pos, enemy_Left_S1[i].y_pos, 0.0f);    // position at 50, 50 with no depth
+				d3dspt->Draw(sprite_enemy_L, &part5, &center5, &position5, D3DCOLOR_ARGB(255, 255, 255, 255));
+			}
+		}
+
+		if (n_Stage2 == 3)
+		{
+			for (int i = 0; i < ENEMY_NUM2; i += 2)
+			{
+
+				D3DXVECTOR3 position2(enemy[i].x_pos, enemy[i].y_pos, 0.0f);    // position at 50, 50 with no depth
+				d3dspt->Draw(sprite_enemy_U, &part2, &center2, &position2, D3DCOLOR_ARGB(255, 255, 255, 255));
+			}
+
+
+			for (int i = 0; i < ENEMY_NUM2; i++)
+			{
+
+				D3DXVECTOR3 position3(enemy_Down_S1[i].x_pos, enemy_Down_S1[i].y_pos, 0.0f);    // position at 50, 50 with no depth
+				d3dspt->Draw(sprite_enemy_D, &part3, &center3, &position3, D3DCOLOR_ARGB(255, 255, 255, 255));
+			}
+		}
+
+		//--------------------------------------------------------------------------
+		// 스테이지 4
+		//--------------------------------------------------------------------------
+
+		if (n_Stage == 4)
+		{
+			for (int i = 0; i < ENEMY_NUM; i++)
+			{
+
+				D3DXVECTOR3 position4(enemy_Right_S1[i].x_pos, enemy_Right_S1[i].y_pos, 0.0f);    // position at 50, 50 with no depth
+				d3dspt->Draw(sprite_enemy_R, &part4, &center4, &position4, D3DCOLOR_ARGB(255, 255, 255, 255));
+			}
+			for (int i = 0; i < ENEMY_NUM; i++)
+			{
+
+				D3DXVECTOR3 position5(enemy_Left_S1[i].x_pos, enemy_Left_S1[i].y_pos, 0.0f);    // position at 50, 50 with no depth
+				d3dspt->Draw(sprite_enemy_L, &part5, &center5, &position5, D3DCOLOR_ARGB(255, 255, 255, 255));
+			}
+
+		}
+
+		if (n_Stage2 == 4)
+		{
+			for (int i = 0; i < ENEMY_NUM2; i++)
+			{
+
+				D3DXVECTOR3 position2(enemy[i].x_pos, enemy[i].y_pos, 0.0f);    // position at 50, 50 with no depth
+				d3dspt->Draw(sprite_enemy_U, &part2, &center2, &position2, D3DCOLOR_ARGB(255, 255, 255, 255));
+			}
+
+			for (int i = 0; i < ENEMY_NUM2; i++)
+			{
+
+				D3DXVECTOR3 position3(enemy_Down_S1[i].x_pos, enemy_Down_S1[i].y_pos, 0.0f);    // position at 50, 50 with no depth
+				d3dspt->Draw(sprite_enemy_D, &part3, &center3, &position3, D3DCOLOR_ARGB(255, 255, 255, 255));
+			}
+		}
 
 		break;
 
@@ -925,7 +1027,7 @@ void render_frame(void)
 
 	case SCORE:
 	{
-		
+
 		init_game();
 
 		static RECT textbox2;
@@ -942,7 +1044,6 @@ void render_frame(void)
 		if (KEY_DOWN(VK_SPACE))
 		{
 			GameState = INIT;
-			
 		}
 		break;
 
@@ -950,7 +1051,7 @@ void render_frame(void)
 
 
 	}
-	
+
 
 
 	d3dspt->End();    // end sprite drawing
@@ -1024,11 +1125,11 @@ int WINAPI WinMain(HINSTANCE hInstance,
 		DWORD starting_point = GetTickCount();
 
 
-		/* 
+		/*
 		게임이 끝나고 다시 Replay했을 때 버틴 시간을 0초로 초기화 해주기 위해
 		Curtime은 Running 스테이지 처음 시작했을 때 부터 clock가동,
 		Oldtime은 처음 게임이 끝난 Score 스테이지 시작했을 때 부터 clock가동해서
-		Time은 Curtime-Oldtime으로 해주면 리플레이 했을 때 0초가 된다. 
+		Time은 Curtime-Oldtime으로 해주면 리플레이 했을 때 0초가 된다.
 		*/
 		if (GameState == SCORE)
 		{
@@ -1038,7 +1139,7 @@ int WINAPI WinMain(HINSTANCE hInstance,
 		if (GameState == RUNNING)
 		{
 			CurTime = clock();
-			Time = CurTime / 1000  - OldTime / 1000;
+			Time = CurTime / 1000 - OldTime / 1000;
 		}
 
 		/* 사운드 계속 재생되게 */
@@ -1090,8 +1191,8 @@ int WINAPI WinMain(HINSTANCE hInstance,
 
 // this is the function that cleans up Direct3D and COM
 void cleanD3D(void)
-{	
-	
+{
+
 	dxfont->Release();
 	sprite->Release();
 	d3ddev->Release();
@@ -1111,9 +1212,9 @@ void cleanD3D(void)
 	sprite_enemy_U->Release();
 	sprite_enemy_D->Release();
 	sprite_heart->Release();
-	
 
-	
+
+
 
 	return;
 }
