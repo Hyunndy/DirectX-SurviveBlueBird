@@ -1,5 +1,5 @@
 ﻿  CreateDevice.cpp
-c:\users\user\documents\github\directx-shooting\그래픽스기말과제\createdevice.cpp(301): warning C4100: 'lpCmdLine': 참조되지 않은 정식 매개 변수입니다.
-c:\users\user\documents\github\directx-shooting\그래픽스기말과제\createdevice.cpp(300): warning C4100: 'hPrevInstance': 참조되지 않은 정식 매개 변수입니다.
+c:\users\user\documents\github\directx-shooting\그래픽스기말과제\createdevice.cpp(231): warning C4100: 'lpCmdLine': 참조되지 않은 정식 매개 변수입니다.
+c:\users\user\documents\github\directx-shooting\그래픽스기말과제\createdevice.cpp(230): warning C4100: 'hPrevInstance': 참조되지 않은 정식 매개 변수입니다.
   CreateDevice_2010.vcxproj -> C:\Users\user\Documents\GitHub\directx-shooting\그래픽스기말과제\Debug\CreateDevice.exe
   CreateDevice_2010.vcxproj -> C:\Users\user\Documents\GitHub\directx-shooting\그래픽스기말과제\Debug\CreateDevice.pdb (Full PDB)

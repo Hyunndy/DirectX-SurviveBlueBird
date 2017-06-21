@@ -10,12 +10,14 @@
 #include <fmod.h> //사운드
 
 // define the screen resolution and keyboard macros
-#define SCREEN_WIDTH  800
-#define SCREEN_HEIGHT 640
+#define SCREEN_WIDTH  800//800
+#define SCREEN_HEIGHT 640 //640
 #define KEY_DOWN(vk_code) ((GetAsyncKeyState(vk_code) & 0x8000) ? 1 : 0)
 #define KEY_UP(vk_code) ((GetAsyncKeyState(vk_code) & 0x8000) ? 0 : 1)
 
-#define ENEMY_NUM 10  
+#define ENEMY_NUM 8
+#define ENEMY_NUM2 10
+
 
 
 // include the Direct3D Library file
@@ -68,6 +70,7 @@ void init_game(void);
 void do_game_logic(void);
 bool sphere_collision_check(float x0, float y0, float size0, float x1, float y1, float size1);
 void Stage_Change();
+void Stage_Change2();
 
 // the WindowProc function prototype
 LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
@@ -87,8 +90,10 @@ enum Game_State { INIT, READY, RUNNING, SCORE };
 Game_State g_GameState = INIT;
 int g_nStage;
 bool Stage_Difficult; // 화살갯수 다르게 나오게 하는거
-bool S;
+bool Stage_Difficult2;
 
+bool S;
+bool S2;
 
 //기본 클래스 
 class entity {
@@ -188,111 +193,36 @@ void Enemy::init(float x, float y)
 
 void Enemy::move()
 {
-	y_pos += 2.5;
+	y_pos += 3.5;
 
 }
 
 
 void Enemy::move_up()
 {
-	y_pos -= 2.5;
+	y_pos -= 3.5;
 }
 
 void Enemy::move_right()
 {
-	x_pos += 2.5;
+	x_pos += 4.5;
 }
 
 void Enemy::move_left()
 {
 	
-	x_pos -= 2.5;
+	x_pos -= 4.5;
 }
-
-
-
-// 총알 클래스 
-class Bullet :public entity {
-
-public:
-	bool bShow;
-
-	void init(float x, float y);
-	void move();
-	bool show();
-	void hide();
-	void active();
-	bool check_collision(float x, float y);
-
-
-};
-
-
-bool Bullet::check_collision(float x, float y)
-{
-
-	//충돌 처리 시 
-	if (sphere_collision_check(x_pos, y_pos, 32, x, y, 32) == true)
-	{
-		bShow = false;
-		return true;
-
-	}
-	else {
-
-		return false;
-	}
-}
-
-
-
-
-void Bullet::init(float x, float y)
-{
-	x_pos = x;
-	y_pos = y;
-
-}
-
-
-
-bool Bullet::show()
-{
-	return bShow;
-
-}
-
-
-void Bullet::active()
-{
-	bShow = true;
-
-}
-
-
-
-void Bullet::move()
-{
-	y_pos += 6;
-}
-
-void Bullet::hide()
-{
-	bShow = false;
-
-}
-
 
 
 
 
 //객체 생성 
 Hero hero;
-Enemy enemy[ENEMY_NUM];
-Enemy enemy_Down_S1[ENEMY_NUM];
+Enemy enemy[ENEMY_NUM2];
+Enemy enemy_Down_S1[ENEMY_NUM2];
 Enemy enemy_Right_S1[ENEMY_NUM];
 Enemy enemy_Left_S1[ENEMY_NUM];
-Bullet bullet;
 
 
 // the entry point for any Windows program
@@ -314,7 +244,7 @@ int WINAPI WinMain(HINSTANCE hInstance,
 	wc.lpszClassName = L"WindowClass";
 
 	RegisterClassEx(&wc);
-
+	//400,100
 	hWnd = CreateWindowEx(NULL, L"WindowClass", L"Our Direct3D Program",
 		WS_OVERLAPPEDWINDOW, 400, 100, SCREEN_WIDTH, SCREEN_HEIGHT,
 		NULL, NULL, hInstance, NULL);
@@ -359,6 +289,11 @@ int WINAPI WinMain(HINSTANCE hInstance,
 		
 		if(S==true)
 		Stage_Change();
+
+		if(S2 == true)
+		Stage_Change2();
+
+
 		// check the 'escape' key
 		if (KEY_DOWN(VK_ESCAPE))
 			PostMessage(hWnd, WM_DESTROY, 0, 0);
@@ -435,7 +370,7 @@ void initD3D(HWND hWnd)
 
 
 	D3DXCreateTextureFromFileEx(d3ddev,    // the device pointer
-		L"Background.png",    // the file name
+		L"Background2.png",    // the file name
 		800,    // default width
 		640,    // default height
 		D3DX_DEFAULT,    // no mip mapping
@@ -541,20 +476,7 @@ void initD3D(HWND hWnd)
 		NULL,    // not using 256 colors
 		&sprite_enemy_D);    // load to sprite
 
-	D3DXCreateTextureFromFileEx(d3ddev,    // the device pointer
-		L"bullet.png",    // the file name
-		D3DX_DEFAULT,    // default width
-		D3DX_DEFAULT,    // default height
-		D3DX_DEFAULT,    // no mip mapping
-		NULL,    // regular usage
-		D3DFMT_A8R8G8B8,    // 32-bit pixels with alpha
-		D3DPOOL_MANAGED,    // typical memory handling
-		D3DX_DEFAULT,    // no filtering
-		D3DX_DEFAULT,    // no mip filtering
-		D3DCOLOR_XRGB(255, 0, 255),    // the hot-pink color key
-		NULL,    // no image info struct
-		NULL,    // not using 256 colors
-		&sprite_bullet);    // load to sprite
+
 
 	D3DXCreateFont(d3ddev, // d3d디바이스
 		40, // 폰트 높이
@@ -590,6 +512,14 @@ void Stage_Change()
 		Stage_Difficult = false;
 }
 
+void Stage_Change2()
+{
+	if (Stage_Difficult2 == false)
+		Stage_Difficult2 = true;
+	else
+		Stage_Difficult2 = false;
+}
+
 void init_game(void)
 {
 	//객체 초기화 
@@ -603,19 +533,24 @@ void init_game(void)
 	for (int i = 0; i<ENEMY_NUM; i++)
 	{
 
-		enemy[i].init((float)(10 + 60 * i), -64);
-		enemy_Down_S1[i].init((float)(10 + 60 * i), 640);
-		enemy_Right_S1[i].init(-64, (float)( 64 * i));
-		enemy_Left_S1[i].init(800, (float)(64 * i));
+		enemy_Right_S1[i].init(-64, (float)( 80 * i));
+		enemy_Left_S1[i].init(800, (float)(80 * i));
 	}
 
-	//총알 초기화 
-	bullet.bShow = true;
-	bullet.init(enemy[3].x_pos, enemy[3].y_pos);
+	for (int i = 0; i < ENEMY_NUM2; i++)
+	{
+
+		enemy[i].init((float)(10 + 80 * i), -64);
+		enemy_Down_S1[i].init((float)(10 + 80 * i), 640);
+	}
+
 
 	// 스테이지 난이도 초기화
 	Stage_Difficult = false;
+	Stage_Difficult2 = false;
+
 	S = false;
+	S2 = false;
 
 	// 왼쪽오른쪽 초기화
 	Move_L = false;
@@ -642,17 +577,17 @@ void do_game_logic(void)
 
 	
 	//적들 처리 
-	for (int i = 0; i<ENEMY_NUM; i++)
+	for (int i = 0; i < ENEMY_NUM2; i++)
 	{
-	
 		if (enemy[i].y_pos > 640)
 		{	
-			
-			enemy[i].init((float)(10 + 60 * i), -64);
+			S2 = true;
+			enemy[i].init((float)(10 + 80 * i), -64);
 		
 		}
 		else
 		{
+			S2 = false;
 			enemy[i].move();
 			
 		}
@@ -660,19 +595,22 @@ void do_game_logic(void)
 
 		if (enemy_Down_S1[i].y_pos < -64)
 		{
-			enemy_Down_S1[i].init((float)(10 + 60 * i), 640);
+			enemy_Down_S1[i].init((float)(10 + 80 * i), 640);
 	
-		}
-			
+		}		
 		 
 		else
 			enemy_Down_S1[i].move_up();
+	}
 
+	for (int i = 0; i<ENEMY_NUM; i++)
+	{
+	
 
 		if (enemy_Right_S1[i].x_pos > 800)
 		{
 			S = true;
-			enemy_Right_S1[i].init(-64, (float)(64 * i));
+			enemy_Right_S1[i].init(-64, (float)(80 * i));
 
 		}
 		else
@@ -683,24 +621,16 @@ void do_game_logic(void)
 		if (enemy_Left_S1[i].x_pos < -64)
 		{
 			
-			enemy_Left_S1[i].init(800, (float)(64 * i));
+			enemy_Left_S1[i].init(800, (float)(80 * i));
 		}
 
 		else
 			enemy_Left_S1[i].move_left();
 
-
-
 	}
 
 
 
-	//총알 처리 
-		if (bullet.y_pos > 480)
-			bullet.hide();
-		else
-			
-			bullet.move();
 
 
 //	//충돌 처리 
@@ -723,7 +653,7 @@ void do_game_logic(void)
 void render_frame(void)
 {
 	// clear the window to a deep blue
-	d3ddev->Clear(0, NULL, D3DCLEAR_TARGET, D3DCOLOR_XRGB(0, 0, 0), 1.0f, 0);
+	d3ddev->Clear(0, NULL, D3DCLEAR_TARGET, D3DCOLOR_XRGB(255, 0, 0), 1.0f, 0);
 
 	d3ddev->BeginScene();    // begins the 3D scene
 
@@ -763,7 +693,7 @@ void render_frame(void)
 
 		//타이머
 		static RECT textbox;
-		SetRect(&textbox, 0, 0, 720, 200); // create a RECT to contain the text
+		SetRect(&textbox, 0, 0, 800, 100); // create a RECT to contain the text
 			// draw the Hello World text
 		dxfont->DrawTextA(NULL,
 			g_strMessage,
@@ -794,16 +724,6 @@ void render_frame(void)
 
 
 
-//	////총알 
-//	if (bullet.bShow == true && S.Stage == 2)
-//	{
-//		RECT part1;
-//		SetRect(&part1, 0, 0, 64, 10);
-//		D3DXVECTOR3 center1(0.0f, 0.0f, 0.0f);    // center at the upper-left corner
-//		D3DXVECTOR3 position1(bullet.x_pos, bullet.y_pos, 0.0f);    // position at 50, 50 with no depth
-//		d3dspt->Draw(sprite_bullet, &part1, &center1, &position1, D3DCOLOR_ARGB(255, 255, 255, 255));
-//	}
-
 
 		////화살_U
 		RECT part2;
@@ -825,41 +745,29 @@ void render_frame(void)
 		SetRect(&part5, 0, 0, 64, 35);
 		D3DXVECTOR3 center5(0.0f, 0.0f, 0.0f);    // center at the upper-left corner
 
-	//	if (Stage_Difficult == false)
-	//	{
-			for (int i = 0; i < ENEMY_NUM; i++)
-			{
 
-				D3DXVECTOR3 position2(enemy[i].x_pos, enemy[i].y_pos, 0.0f);    // position at 50, 50 with no depth
-				d3dspt->Draw(sprite_enemy_U, &part2, &center2, &position2, D3DCOLOR_ARGB(255, 255, 255, 255));
-			}
-
-
-			for (int i = 0; i < ENEMY_NUM; i++)
-			{
-
-				D3DXVECTOR3 position3(enemy_Down_S1[i].x_pos, enemy_Down_S1[i].y_pos, 0.0f);    // position at 50, 50 with no depth
-				d3dspt->Draw(sprite_enemy_D, &part3, &center3, &position3, D3DCOLOR_ARGB(255, 255, 255, 255));
-			}
 
 			if (Stage_Difficult == true)
 			{
+
 				for (int i = 0; i < ENEMY_NUM; i++)
 				{
 
-					D3DXVECTOR3 position4(enemy_Right_S1[i].x_pos, enemy_Right_S1[i].y_pos, 0.0f);    // position at 50, 50 with no depth
-					d3dspt->Draw(sprite_enemy_R, &part4, &center4, &position4, D3DCOLOR_ARGB(255, 255, 255, 255));
+				D3DXVECTOR3 position4(enemy_Right_S1[i].x_pos, enemy_Right_S1[i].y_pos, 0.0f);    // position at 50, 50 with no depth
+				d3dspt->Draw(sprite_enemy_R, &part4, &center4, &position4, D3DCOLOR_ARGB(255, 255, 255, 255));
 				}			
-					for (int i = 0; i < ENEMY_NUM; i += 2)
+				for (int i = 0; i < ENEMY_NUM; i += 2)
 				{
-
-					D3DXVECTOR3 position5(enemy_Left_S1[i].x_pos, enemy_Left_S1[i].y_pos, 0.0f);    // position at 50, 50 with no depth
-					d3dspt->Draw(sprite_enemy_L, &part5, &center5, &position5, D3DCOLOR_ARGB(255, 255, 255, 255));
+	
+				D3DXVECTOR3 position5(enemy_Left_S1[i].x_pos, enemy_Left_S1[i].y_pos, 0.0f);    // position at 50, 50 with no depth
+				d3dspt->Draw(sprite_enemy_L, &part5, &center5, &position5, D3DCOLOR_ARGB(255, 255, 255, 255));
 				}			
 
 			}
+
 			else
-			{
+			{			
+				
 				for (int i = 0; i < ENEMY_NUM; i += 2)
 				{
 
@@ -869,37 +777,53 @@ void render_frame(void)
 
 
 				for (int i = 0; i < ENEMY_NUM; i++)
-			{
+				{
 
 				D3DXVECTOR3 position5(enemy_Left_S1[i].x_pos, enemy_Left_S1[i].y_pos, 0.0f);    // position at 50, 50 with no depth
 				d3dspt->Draw(sprite_enemy_L, &part5, &center5, &position5, D3DCOLOR_ARGB(255, 255, 255, 255));
-			}
+				}
 
 			}
 
-	//	}
+			if (Stage_Difficult2 == true)
+			{
 
-	//	else
-	//	{
-		//	for (int i = 0; i < ENEMY_NUM; i++)
-		//	{
-		//	
-		//		D3DXVECTOR3 position2(enemy[i].x_pos, enemy[i].y_pos, 0.0f);    // position at 50, 50 with no depth
-		//		d3dspt->Draw(sprite_enemy_U, &part2, &center2, &position2, D3DCOLOR_ARGB(255, 255, 255, 255));
-		//	}
-		//	
-		//	
-		//	for (int i = 0; i < ENEMY_NUM; i++)
-		//	{
-		//	
-		//		D3DXVECTOR3 position3(enemy_Down_S1[i].x_pos, enemy_Down_S1[i].y_pos, 0.0f);    // position at 50, 50 with no depth
-		//		d3dspt->Draw(sprite_enemy_D, &part3, &center3, &position3, D3DCOLOR_ARGB(255, 255, 255, 255));
-		//	}
-		//	
+				for (int i = 0; i < ENEMY_NUM2; i++)
+				{
+
+					D3DXVECTOR3 position2(enemy[i].x_pos, enemy[i].y_pos, 0.0f);    // position at 50, 50 with no depth
+					d3dspt->Draw(sprite_enemy_U, &part2, &center2, &position2, D3DCOLOR_ARGB(255, 255, 255, 255));
+				}
+
+				for (int i = 0; i < ENEMY_NUM2; i += 2)
+				{
+
+					D3DXVECTOR3 position3(enemy_Down_S1[i].x_pos, enemy_Down_S1[i].y_pos, 0.0f);    // position at 50, 50 with no depth
+					d3dspt->Draw(sprite_enemy_D, &part3, &center3, &position3, D3DCOLOR_ARGB(255, 255, 255, 255));
+				}
 
 
+			}
 
-	//	}
+			else
+			{
+				for (int i = 0; i < ENEMY_NUM2; i += 2)
+				{
+
+					D3DXVECTOR3 position2(enemy[i].x_pos, enemy[i].y_pos, 0.0f);    // position at 50, 50 with no depth
+					d3dspt->Draw(sprite_enemy_U, &part2, &center2, &position2, D3DCOLOR_ARGB(255, 255, 255, 255));
+				}
+
+
+				for (int i = 0; i < ENEMY_NUM2; i++)
+				{
+
+					D3DXVECTOR3 position3(enemy_Down_S1[i].x_pos, enemy_Down_S1[i].y_pos, 0.0f);    // position at 50, 50 with no depth
+					d3dspt->Draw(sprite_enemy_D, &part3, &center3, &position3, D3DCOLOR_ARGB(255, 255, 255, 255));
+				}
+			}
+
+
 
 
 		break;
@@ -951,7 +875,7 @@ void cleanD3D(void)
 	sprite_enemy_U->Release();
 	sprite_enemy_D->Release();
 
-	sprite_bullet->Release();
+
 	
 
 	return;
