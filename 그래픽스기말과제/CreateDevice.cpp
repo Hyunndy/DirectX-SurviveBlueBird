@@ -39,12 +39,14 @@ LPD3DXFONT dxfont; // 폰트 오브젝트의 포인터
 // 타이머
 //-----------------------------------------------
 
-char SecondMessage[200]; // 버틴 시간 : n초 저장하는 문자열
+char StartMessage[200]; // 시작 화면
+char SecondMessage[200]; // 생존 시간 : n초 저장하는 문자열
 char ScoreMessage[200]; // 게임 종료 시 스코어를 나타내는 문자열
 int Time; // 시간 저장 변수
 int TimeScore; // 스코어 저장 변수
 clock_t CurTime; // 게임 시작 부터 흘러 간 시간
 clock_t OldTime; // 게임 종료 부터 흘러 간 시간
+int ssibal;
 
 
  //-----------------------------------------------
@@ -60,6 +62,8 @@ LPDIRECT3DTEXTURE9 sprite_enemy_L;    // the pointer to the sprite
 LPDIRECT3DTEXTURE9 sprite_enemy_U;    // the pointer to the sprite
 LPDIRECT3DTEXTURE9 sprite_enemy_D;    // the pointer to the sprite
 LPDIRECT3DTEXTURE9 sprite_heart;    // the pointer to the sprite
+LPDIRECT3DTEXTURE9 sprite_Finish;    // the pointer to the sprite
+
 
 //----------------------------------------------------
 // FMOD 사운드 시스템 생성과 초기화
@@ -435,6 +439,22 @@ void initD3D(HWND hWnd)
 
 
 
+	D3DXCreateTextureFromFileEx(d3ddev,    // the device pointer
+		L"Finish_Background2.png",    // the file name
+		800,    // default width
+		640,    // default height
+		D3DX_DEFAULT,    // no mip mapping
+		NULL,    // regular usage
+		D3DFMT_A8R8G8B8,    // 32-bit pixels with alpha
+		D3DPOOL_MANAGED,    // typical memory handling
+		D3DX_DEFAULT,    // no filtering
+		D3DX_DEFAULT,    // no mip filtering
+		D3DCOLOR_XRGB(255, 0, 255),    // the hot-pink color key
+		NULL,    // no image info struct
+		NULL,    // not using 256 colors
+		&sprite_Finish);    // load to sprite
+
+
 	D3DXCreateFont(d3ddev, // d3d디바이스
 		40, // 폰트 높이
 		0, // 폰트 넓이
@@ -445,7 +465,7 @@ void initD3D(HWND hWnd)
 		OUT_DEFAULT_PRECIS,
 		DEFAULT_QUALITY,
 		DEFAULT_PITCH | FF_DONTCARE,
-		L"Arial",
+		L"Showcard Gothic",
 		&dxfont);
 
 
@@ -493,8 +513,6 @@ void init_game(void)
 		enemy[i].init((float)(10 + 80 * i), -64);
 		enemy_Down_S1[i].init((float)(10 + 80 * i), 640);
 	}
-
-
 
 
 	S = false;
@@ -552,10 +570,9 @@ void do_game_logic(void)
 {
 
 
-
 	if (GameState == RUNNING)
 	{
-		sprintf_s(SecondMessage, sizeof(SecondMessage), "버틴 시간 : %d 초", Time);
+		sprintf_s(SecondMessage, sizeof(SecondMessage), "Survive Time : %d Sec", Time);
 
 		//주인공 처리 
 		if (KEY_DOWN(VK_UP))
@@ -729,7 +746,7 @@ void do_game_logic(void)
 
 	if (GameState == SCORE)
 	{
-		sprintf_s(ScoreMessage, sizeof(ScoreMessage), "\nGame Over!!\n버틴 시간 : %d 초", TimeScore);
+		sprintf_s(ScoreMessage, sizeof(ScoreMessage), "Survive Time: %d Sec", TimeScore);
 	}
 
 }
@@ -738,7 +755,7 @@ void do_game_logic(void)
 void render_frame(void)
 {
 	// clear the window to a deep blue
-	d3ddev->Clear(0, NULL, D3DCLEAR_TARGET, D3DCOLOR_XRGB(207, 192, 54), 1.0f, 0);
+	d3ddev->Clear(0, NULL, D3DCLEAR_TARGET, D3DCOLOR_XRGB(201, 214, 135), 1.0f, 0);
 
 	d3ddev->BeginScene();    // begins the 3D scene
 
@@ -757,12 +774,16 @@ void render_frame(void)
 
 	case INIT:
 	{
-		//배경
+		////배경
 		RECT Back_Start;
 		SetRect(&Back_Start, 0, 0, 800, 640);
 		D3DXVECTOR3 center(0.0f, 0.0f, 0.0f);    // center at the upper-left corner
 		D3DXVECTOR3 position(0, 0, 0.0f);    // position at 50, 50 with no depth
 		d3dspt->Draw(sprite_Start, &Back_Start, &center, &position, D3DCOLOR_ARGB(255, 255, 255, 255));
+		
+
+		
+		
 		if (KEY_DOWN(VK_SHIFT))
 		{
 			GameState = RUNNING;
@@ -781,7 +802,7 @@ void render_frame(void)
 
 		//타이머
 		static RECT textbox;
-		SetRect(&textbox, 0, 0, 820, 120); // create a RECT to contain the text
+		SetRect(&textbox, 0, 10, 820, 120); // create a RECT to contain the text
 			// draw the Hello World text
 		dxfont->DrawTextA(NULL,
 			SecondMessage,
@@ -1028,6 +1049,13 @@ void render_frame(void)
 	case SCORE:
 	{
 
+		//배경
+		RECT Back;
+		SetRect(&Back, 0, 0, 800, 640);
+		D3DXVECTOR3 center0(0.0f, 0.0f, 0.0f);    // center at the upper-left corner
+		D3DXVECTOR3 position0(0, 0, 0.0f);    // position at 50, 50 with no depth
+		d3dspt->Draw(sprite_Finish, &Back, &center0, &position0, D3DCOLOR_ARGB(255, 255, 255, 255));
+
 		init_game();
 
 		static RECT textbox2;
@@ -1102,7 +1130,7 @@ int WINAPI WinMain(HINSTANCE hInstance,
 
 	RegisterClassEx(&wc);
 	//400,100
-	hWnd = CreateWindowEx(NULL, L"WindowClass", L"HJ'S DIRECTX GAME",
+	hWnd = CreateWindowEx(NULL, L"WindowClass", L"살아남아라! 파랑새",
 		WS_OVERLAPPEDWINDOW, 400, 100, SCREEN_WIDTH, SCREEN_HEIGHT,
 		NULL, NULL, hInstance, NULL);
 
@@ -1124,22 +1152,21 @@ int WINAPI WinMain(HINSTANCE hInstance,
 
 		DWORD starting_point = GetTickCount();
 
-
 		/*
 		게임이 끝나고 다시 Replay했을 때 버틴 시간을 0초로 초기화 해주기 위해
-		Curtime은 Running 스테이지 처음 시작했을 때 부터 clock가동,
-		Oldtime은 처음 게임이 끝난 Score 스테이지 시작했을 때 부터 clock가동해서
-		Time은 Curtime-Oldtime으로 해주면 리플레이 했을 때 0초가 된다.
+		Curtime에는 게임 시작 부터 시간.
+		OldTime은 INIT부터 시작하는 시간
 		*/
-		if (GameState == SCORE)
-		{
-			OldTime = clock();
-		}
+		CurTime = clock();
+
+		if(GameState ==INIT)
+			OldTime = CurTime/1000;
 
 		if (GameState == RUNNING)
 		{
-			CurTime = clock();
-			Time = CurTime / 1000 - OldTime / 1000;
+
+			//CurTime = clock();
+			Time = CurTime / 1000- OldTime;
 		}
 
 		/* 사운드 계속 재생되게 */
@@ -1212,6 +1239,7 @@ void cleanD3D(void)
 	sprite_enemy_U->Release();
 	sprite_enemy_D->Release();
 	sprite_heart->Release();
+	sprite_Finish->Release();
 
 
 
