@@ -582,7 +582,7 @@ void do_game_logic(void)
 	if (GameState == RUNNING)
 	{
 
-		sprintf_s(SecondMessage, sizeof(SecondMessage), "Survive Time : %d Sec", Time);
+		sprintf_s(SecondMessage, sizeof(SecondMessage), "Survival Time : %d Sec", Time);
 
 		//주인공 처리 
 		if (KEY_DOWN(VK_UP))
@@ -758,7 +758,7 @@ void do_game_logic(void)
 
 	if (GameState == SCORE)
 	{
-		sprintf_s(ScoreMessage, sizeof(ScoreMessage), "Survive Time: %d Sec", TimeScore);
+		sprintf_s(ScoreMessage, sizeof(ScoreMessage), "Survival Time: %d Sec", TimeScore);
 	}
 
 }
