@@ -16,10 +16,8 @@
 #define KEY_UP(vk_code) ((GetAsyncKeyState(vk_code) & 0x8000) ? 0 : 1)
 
 
-
 #define ENEMY_NUM 8
 #define ENEMY_NUM2 10
-
 
 
 // include the Direct3D Library file
@@ -46,7 +44,7 @@ int Time; // 시간 저장 변수
 int TimeScore; // 스코어 저장 변수
 clock_t CurTime; // 게임 시작 부터 흘러 간 시간
 clock_t OldTime; // 게임 종료 부터 흘러 간 시간
-int ssibal;
+
 
 
  //-----------------------------------------------
@@ -70,8 +68,17 @@ LPDIRECT3DTEXTURE9 sprite_Finish;    // the pointer to the sprite
 //----------------------------------------------------
 
 FMOD_SYSTEM *g_System;
+
 FMOD_SOUND *Sound;
+FMOD_SOUND *Arrow_Sound;
+FMOD_SOUND *Die_Sound;
+FMOD_SOUND *Eagle_Sound;
+
 FMOD_CHANNEL *Channel;
+FMOD_CHANNEL *Arrow_Channel;
+FMOD_CHANNEL *Die_Channel;
+FMOD_CHANNEL *Eagle_Channel;
+
 FMOD_CHANNELGROUP *g_ChannelGroup;
 
 
@@ -257,8 +264,6 @@ void Enemy::move_left()
 }
 
 
-
-
 //객체 생성 
 Hero hero;
 Enemy enemy[ENEMY_NUM2];
@@ -268,11 +273,9 @@ Enemy enemy_Left_S1[ENEMY_NUM];
 
 
 
-
 // this is the main message handler for the program
-
-
 // this function initializes and prepares Direct3D for use
+
 void initD3D(HWND hWnd)
 {
 	d3d = Direct3DCreate9(D3D_SDK_VERSION);
@@ -475,7 +478,12 @@ void initD3D(HWND hWnd)
 	FMOD_System_Create(&g_System);
 	FMOD_System_Init(g_System, 32, FMOD_INIT_NORMAL, NULL);
 	FMOD_System_CreateSound(g_System, "Sound.mp3", FMOD_DEFAULT, 0, &Sound);
+	FMOD_System_CreateSound(g_System, "Shoot.wav", FMOD_DEFAULT, 0, &Arrow_Sound);
+	FMOD_System_CreateSound(g_System, "Die.wav", FMOD_DEFAULT, 0, &Die_Sound);
+	FMOD_System_CreateSound(g_System, "Eagle.mp3", FMOD_DEFAULT, 0, &Eagle_Sound);
 
+
+	// 사운드
 
 
 	return;
@@ -484,7 +492,7 @@ void initD3D(HWND hWnd)
 
 void init_game(void)
 {
-
+	FMOD_System_PlaySound(g_System, Sound, g_ChannelGroup, 0, &Channel);
 
 	TimeScore = Time;
 
@@ -495,11 +503,9 @@ void init_game(void)
 	hero.Heart3 = true;
 	hero.N_Death = 0;
 
-	// 사운드
-
-	FMOD_System_PlaySound(g_System, Sound, g_ChannelGroup, 0, &Channel);
 
 	//적들 초기화 
+
 	for (int i = 0; i < ENEMY_NUM; i++)
 	{
 
@@ -522,7 +528,6 @@ void init_game(void)
 	n_Stage2 = 1;
 
 
-
 	// 왼쪽오른쪽 초기화
 	Move_L = false;
 
@@ -537,6 +542,7 @@ void init_game(void)
 /* 왼 오 화살의 레벨관리 */
 void Stage_Change()
 {
+	FMOD_System_PlaySound(g_System, Arrow_Sound, g_ChannelGroup, 0, &Arrow_Channel);
 	n_Stage++;
 	if (n_Stage == 5)
 		n_Stage = 1;
@@ -544,6 +550,7 @@ void Stage_Change()
 /* 위 아래 화살의 레벨관리 */
 void Stage_Change2()
 {
+	FMOD_System_PlaySound(g_System, Arrow_Sound, g_ChannelGroup, 0, &Arrow_Channel);
 	n_Stage2++;
 	if (n_Stage2 == 5)
 		n_Stage2 = 1;
@@ -553,6 +560,7 @@ void Collision()
 {
 	hero.init(375, 360);
 	hero.N_Death++;
+	FMOD_System_PlaySound(g_System, Die_Sound, g_ChannelGroup, 0, &Die_Channel);
 
 	if (hero.N_Death == 1)
 		hero.Heart1 = false;
@@ -562,6 +570,7 @@ void Collision()
 	{
 		hero.Heart3 = false;
 		hero.N_Death = 0;
+		FMOD_System_PlaySound(g_System, Eagle_Sound, g_ChannelGroup, 0, &Eagle_Channel);
 		GameState = SCORE;
 	}
 }
@@ -572,6 +581,7 @@ void do_game_logic(void)
 
 	if (GameState == RUNNING)
 	{
+
 		sprintf_s(SecondMessage, sizeof(SecondMessage), "Survive Time : %d Sec", Time);
 
 		//주인공 처리 
@@ -594,6 +604,7 @@ void do_game_logic(void)
 			if (enemy[i].y_pos > 640)
 			{
 				S2 = true;
+				
 				enemy[i].init((float)(10 + 80 * i), -64);
 
 			}
@@ -606,6 +617,7 @@ void do_game_logic(void)
 
 			if (enemy_Down_S1[i].y_pos < -64)
 			{
+				
 				enemy_Down_S1[i].init((float)(10 + 80 * i), 640);
 
 			}
@@ -787,6 +799,7 @@ void render_frame(void)
 		if (KEY_DOWN(VK_SHIFT))
 		{
 			GameState = RUNNING;
+			FMOD_System_PlaySound(g_System, Arrow_Sound, g_ChannelGroup, 0, &Arrow_Channel);
 		}
 		break;
 	}
@@ -1048,6 +1061,10 @@ void render_frame(void)
 
 	case SCORE:
 	{
+		//FMOD_System_PlaySound(g_System, Eagle_Sound, g_ChannelGroup, 0, &Eagle_Channel);
+
+		FMOD_Channel_Stop(Channel);
+		
 
 		//배경
 		RECT Back;
@@ -1164,14 +1181,12 @@ int WINAPI WinMain(HINSTANCE hInstance,
 
 		if (GameState == RUNNING)
 		{
-
 			//CurTime = clock();
 			Time = CurTime / 1000- OldTime;
 		}
 
 		/* 사운드 계속 재생되게 */
 		FMOD_System_Update(g_System);
-
 
 		if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
 		{
@@ -1181,7 +1196,6 @@ int WINAPI WinMain(HINSTANCE hInstance,
 			TranslateMessage(&msg);
 			DispatchMessage(&msg);
 		}
-
 
 		do_game_logic();
 
@@ -1196,9 +1210,6 @@ int WINAPI WinMain(HINSTANCE hInstance,
 
 		if (S2 == true)
 			Stage_Change2();
-
-
-
 
 		// check the 'escape' key
 		if (KEY_DOWN(VK_ESCAPE))
@@ -1229,6 +1240,9 @@ void cleanD3D(void)
 
 	//객체 해제 
 	FMOD_Sound_Release(Sound);
+	FMOD_Sound_Release(Arrow_Sound);
+	FMOD_Sound_Release(Die_Sound);
+	FMOD_Sound_Release(Eagle_Sound);
 	FMOD_System_Close(g_System);
 	FMOD_System_Release(g_System);
 	sprite_Start->Release();
